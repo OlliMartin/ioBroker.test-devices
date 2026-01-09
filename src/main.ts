@@ -12,6 +12,15 @@ type StateWithDeviceRef = ExternalDetectorState & {
 	deviceRef: DeviceDefinition;
 };
 
+const getDeviceMetadata: () => DeviceDefinition[] = () => {
+	const knownPatterns = ChannelDetector.getPatterns();
+
+	return Object.entries(knownPatterns).map(([k, v]) => ({
+		...v,
+		name: k,
+	}));
+};
+
 const getStateType = (state: ExternalDetectorState, fallback?: ioBroker.CommonType): ioBroker.CommonType => {
 	return Array.isArray(state.type) ? state.type[0] : (state.type ?? fallback ?? 'string');
 };
@@ -43,48 +52,12 @@ class TestDevices extends utils.Adapter {
 	}
 
 	private async onReady(): Promise<void> {
-		const knownPatterns = ChannelDetector.getPatterns();
+		const allDevices = getDeviceMetadata();
 
-		const allDevices = Object.entries(knownPatterns).map(([k, v]) => ({
-			...v,
-			name: k,
-		}));
+		this.analyzeAllStates(allDevices);
 
-		const mapState: (device: DeviceDefinition, state: ExternalDetectorState) => StateWithDeviceRef = (
-			device,
-			state,
-		) => ({ ...state, deviceRef: device });
-
-		const allStates = allDevices.reduce(
-			(prev: StateWithDeviceRef[], curr) => [...prev, ...curr.states.map(s => mapState(curr, s))],
-			[],
-		);
-
-		this.log.info(`State count total: ${allStates.length}`);
-
-		const statesWithoutDefaultRole = allStates.filter(s => !s.defaultRole);
-
-		if (statesWithoutDefaultRole.length > 0) {
-			this.log.info(
-				`States without default role: ${statesWithoutDefaultRole.length} - [${statesWithoutDefaultRole.map(s => s.name).join(', ')}]`,
-			);
-
-			printMissingDefaultRoleMarkdown(statesWithoutDefaultRole);
-		}
-
-		const devicesWithMissingDefaultRoles = allDevices.filter(
-			d => d.states.filter(s => s.required && !s.defaultRole).length > 0,
-		);
-
-		const deviceNamesWithMissingDefaultRoles = devicesWithMissingDefaultRoles.map(d => d.name);
-
-		if (devicesWithMissingDefaultRoles.length > 0) {
-			this.log.warn(
-				`Found ${devicesWithMissingDefaultRoles.length} devices with missing default roles: [${deviceNamesWithMissingDefaultRoles.join(
-					', ',
-				)}] These will be skipped.`,
-			);
-		}
+		const deviceNamesWithMissingDefaultRoles = this.getDeviceNamesMissingDefaultRoles(allDevices);
+		this.analyzeDuplicateDefaultRoles(allDevices);
 
 		const validDevices: DeviceDefinition[] = allDevices.filter(
 			d => !deviceNamesWithMissingDefaultRoles.includes(d.name),
@@ -106,7 +79,7 @@ class TestDevices extends utils.Adapter {
 	private async createOrUpdateSingleDeviceAsync(device: DeviceDefinition): Promise<number> {
 		const deviceRoot = `${this.namespace}.${device.name}`;
 		await this.extendObject(deviceRoot, {
-			type: 'channel',
+			type: 'device',
 			common: {
 				name: device.name,
 			},
@@ -143,6 +116,75 @@ class TestDevices extends utils.Adapter {
 		} finally {
 			callback();
 		}
+	}
+
+	private analyzeAllStates(allDevices: DeviceDefinition[]): void {
+		const mapState: (device: DeviceDefinition, state: ExternalDetectorState) => StateWithDeviceRef = (
+			device,
+			state,
+		) => ({ ...state, deviceRef: device });
+
+		const allStates = allDevices.reduce(
+			(prev: StateWithDeviceRef[], curr) => [...prev, ...curr.states.map(s => mapState(curr, s))],
+			[],
+		);
+
+		this.log.info(`State count total: ${allStates.length}`);
+
+		const statesWithoutDefaultRole = allStates.filter(s => !s.defaultRole);
+
+		if (statesWithoutDefaultRole.length > 0) {
+			this.log.info(
+				`States without default role: ${statesWithoutDefaultRole.length} - [${statesWithoutDefaultRole.map(s => s.name).join(', ')}]`,
+			);
+
+			printMissingDefaultRoleMarkdown(statesWithoutDefaultRole);
+		}
+	}
+
+	private analyzeDuplicateDefaultRoles(allDevices: DeviceDefinition[]): void {
+		const isDuplicatedDefaultRole = (state: ExternalDetectorState, allStates: ExternalDetectorState[]): boolean => {
+			return allStates.filter(sInner => sInner.defaultRole == state.defaultRole).length > 1;
+		};
+
+		const devicesWithDuplicateDefaultRoles = allDevices.filter(
+			d => d.states.filter(s => isDuplicatedDefaultRole(s, d.states)).length > 0,
+		);
+
+		if (devicesWithDuplicateDefaultRoles.length > 0) {
+			const deviceNamesWithDuplicateDefaultRoles = devicesWithDuplicateDefaultRoles.map(d => d.name);
+			this.log.warn(
+				`Found ${devicesWithDuplicateDefaultRoles.length} devices with duplicate default roles: [${deviceNamesWithDuplicateDefaultRoles.join(
+					', ',
+				)}]`,
+			);
+
+			for (const device of devicesWithDuplicateDefaultRoles) {
+				const duplicatedDefaultRoles = device.states
+					.filter(s => isDuplicatedDefaultRole(s, device.states))
+					.map(s => `${s.name} -> ${s.defaultRole}`);
+
+				this.log.warn(`${device.name} -> Duplicate Roles: ${duplicatedDefaultRoles.join(', ')}`);
+			}
+		}
+	}
+
+	private getDeviceNamesMissingDefaultRoles(allDevices: DeviceDefinition[]): string[] {
+		const devicesWithMissingDefaultRoles = allDevices.filter(
+			d => d.states.filter(s => s.required && !s.defaultRole).length > 0,
+		);
+
+		const deviceNamesWithMissingDefaultRoles = devicesWithMissingDefaultRoles.map(d => d.name);
+
+		if (devicesWithMissingDefaultRoles.length > 0) {
+			this.log.warn(
+				`Found ${devicesWithMissingDefaultRoles.length} devices with missing default roles: [${deviceNamesWithMissingDefaultRoles.join(
+					', ',
+				)}] These will be skipped.`,
+			);
+		}
+
+		return deviceNamesWithMissingDefaultRoles;
 	}
 }
 if (require.main !== module) {

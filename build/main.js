@@ -23,6 +23,13 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 ));
 var utils = __toESM(require("@iobroker/adapter-core"));
 var import_type_detector = __toESM(require("@iobroker/type-detector"));
+const getDeviceMetadata = () => {
+  const knownPatterns = import_type_detector.default.getPatterns();
+  return Object.entries(knownPatterns).map(([k, v]) => ({
+    ...v,
+    name: k
+  }));
+};
 const getStateType = (state, fallback) => {
   var _a, _b;
   return Array.isArray(state.type) ? state.type[0] : (_b = (_a = state.type) != null ? _a : fallback) != null ? _b : "string";
@@ -47,35 +54,10 @@ class TestDevices extends utils.Adapter {
     this.on("unload", this.onUnload.bind(this));
   }
   async onReady() {
-    const knownPatterns = import_type_detector.default.getPatterns();
-    const allDevices = Object.entries(knownPatterns).map(([k, v]) => ({
-      ...v,
-      name: k
-    }));
-    const mapState = (device, state) => ({ ...state, deviceRef: device });
-    const allStates = allDevices.reduce(
-      (prev, curr) => [...prev, ...curr.states.map((s) => mapState(curr, s))],
-      []
-    );
-    this.log.info(`State count total: ${allStates.length}`);
-    const statesWithoutDefaultRole = allStates.filter((s) => !s.defaultRole);
-    if (statesWithoutDefaultRole.length > 0) {
-      this.log.info(
-        `States without default role: ${statesWithoutDefaultRole.length} - [${statesWithoutDefaultRole.map((s) => s.name).join(", ")}]`
-      );
-      printMissingDefaultRoleMarkdown(statesWithoutDefaultRole);
-    }
-    const devicesWithMissingDefaultRoles = allDevices.filter(
-      (d) => d.states.filter((s) => s.required && !s.defaultRole).length > 0
-    );
-    const deviceNamesWithMissingDefaultRoles = devicesWithMissingDefaultRoles.map((d) => d.name);
-    if (devicesWithMissingDefaultRoles.length > 0) {
-      this.log.warn(
-        `Found ${devicesWithMissingDefaultRoles.length} devices with missing default roles: [${deviceNamesWithMissingDefaultRoles.join(
-          ", "
-        )}] These will be skipped.`
-      );
-    }
+    const allDevices = getDeviceMetadata();
+    this.analyzeAllStates(allDevices);
+    const deviceNamesWithMissingDefaultRoles = this.getDeviceNamesMissingDefaultRoles(allDevices);
+    this.analyzeDuplicateDefaultRoles(allDevices);
     const validDevices = allDevices.filter(
       (d) => !deviceNamesWithMissingDefaultRoles.includes(d.name)
     );
@@ -93,7 +75,7 @@ class TestDevices extends utils.Adapter {
     var _a, _b;
     const deviceRoot = `${this.namespace}.${device.name}`;
     await this.extendObject(deviceRoot, {
-      type: "channel",
+      type: "device",
       common: {
         name: device.name
       }
@@ -124,6 +106,55 @@ class TestDevices extends utils.Adapter {
     } finally {
       callback();
     }
+  }
+  analyzeAllStates(allDevices) {
+    const mapState = (device, state) => ({ ...state, deviceRef: device });
+    const allStates = allDevices.reduce(
+      (prev, curr) => [...prev, ...curr.states.map((s) => mapState(curr, s))],
+      []
+    );
+    this.log.info(`State count total: ${allStates.length}`);
+    const statesWithoutDefaultRole = allStates.filter((s) => !s.defaultRole);
+    if (statesWithoutDefaultRole.length > 0) {
+      this.log.info(
+        `States without default role: ${statesWithoutDefaultRole.length} - [${statesWithoutDefaultRole.map((s) => s.name).join(", ")}]`
+      );
+      printMissingDefaultRoleMarkdown(statesWithoutDefaultRole);
+    }
+  }
+  analyzeDuplicateDefaultRoles(allDevices) {
+    const isDuplicatedDefaultRole = (state, allStates) => {
+      return allStates.filter((sInner) => sInner.defaultRole == state.defaultRole).length > 1;
+    };
+    const devicesWithDuplicateDefaultRoles = allDevices.filter(
+      (d) => d.states.filter((s) => isDuplicatedDefaultRole(s, d.states)).length > 0
+    );
+    if (devicesWithDuplicateDefaultRoles.length > 0) {
+      const deviceNamesWithDuplicateDefaultRoles = devicesWithDuplicateDefaultRoles.map((d) => d.name);
+      this.log.warn(
+        `Found ${devicesWithDuplicateDefaultRoles.length} devices with duplicate default roles: [${deviceNamesWithDuplicateDefaultRoles.join(
+          ", "
+        )}]`
+      );
+      for (const device of devicesWithDuplicateDefaultRoles) {
+        const duplicatedDefaultRoles = device.states.filter((s) => isDuplicatedDefaultRole(s, device.states)).map((s) => `${s.name} -> ${s.defaultRole}`);
+        this.log.warn(`${device.name} -> Duplicate Roles: ${duplicatedDefaultRoles.join(", ")}`);
+      }
+    }
+  }
+  getDeviceNamesMissingDefaultRoles(allDevices) {
+    const devicesWithMissingDefaultRoles = allDevices.filter(
+      (d) => d.states.filter((s) => s.required && !s.defaultRole).length > 0
+    );
+    const deviceNamesWithMissingDefaultRoles = devicesWithMissingDefaultRoles.map((d) => d.name);
+    if (devicesWithMissingDefaultRoles.length > 0) {
+      this.log.warn(
+        `Found ${devicesWithMissingDefaultRoles.length} devices with missing default roles: [${deviceNamesWithMissingDefaultRoles.join(
+          ", "
+        )}] These will be skipped.`
+      );
+    }
+    return deviceNamesWithMissingDefaultRoles;
   }
 }
 if (require.main !== module) {
