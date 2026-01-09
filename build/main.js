@@ -22,6 +22,7 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   mod
 ));
 var utils = __toESM(require("@iobroker/adapter-core"));
+var import_type_detector = __toESM(require("@iobroker/type-detector"));
 class TestDevices extends utils.Adapter {
   constructor(options = {}) {
     super({
@@ -29,94 +30,79 @@ class TestDevices extends utils.Adapter {
       name: "test-devices"
     });
     this.on("ready", this.onReady.bind(this));
-    this.on("stateChange", this.onStateChange.bind(this));
     this.on("unload", this.onUnload.bind(this));
+    this.config.test.unknown = [];
   }
-  /**
-   * Is called when databases are connected and adapter received configuration.
-   */
   async onReady() {
-    this.log.debug("config option1: ${this.config.option1}");
-    this.log.debug("config option2: ${this.config.option2}");
-    await this.setObjectNotExistsAsync("testVariable", {
-      type: "state",
-      common: {
-        name: "testVariable",
-        type: "boolean",
-        role: "indicator",
-        read: true,
-        write: true
-      },
-      native: {}
-    });
-    this.subscribeStates("testVariable");
-    await this.setState("testVariable", true);
-    await this.setState("testVariable", { val: true, ack: true });
-    await this.setState("testVariable", { val: true, ack: true, expire: 30 });
-    const pwdResult = await this.checkPasswordAsync("admin", "iobroker");
-    this.log.info(`check user admin pw iobroker: ${JSON.stringify(pwdResult)}`);
-    const groupResult = await this.checkGroupAsync("admin", "admin");
-    this.log.info(`check group user admin group admin: ${JSON.stringify(groupResult)}`);
+    const knownPatterns = import_type_detector.default.getPatterns();
+    const allDevices = Object.entries(knownPatterns).map(([k, v]) => ({
+      ...v,
+      name: k
+    }));
+    console.log(
+      "State count total:",
+      allDevices.map((d) => d.states).reduce((prev, curr) => [...prev, ...curr], []).length
+    );
+    const devicesWithMissingDefaultRoles = allDevices.filter(
+      (d) => d.states.filter((s) => s.required && !s.defaultRole).length > 0
+    );
+    const deviceNamesWithMissingDefaultRoles = devicesWithMissingDefaultRoles.map((d) => d.name);
+    if (devicesWithMissingDefaultRoles.length > 0) {
+      this.log.warn(
+        `Found ${devicesWithMissingDefaultRoles.length} devices with missing default roles: [${deviceNamesWithMissingDefaultRoles.join(
+          ", "
+        )}] These will be skipped.`
+      );
+    }
+    const validDevices = allDevices.filter(
+      (d) => !deviceNamesWithMissingDefaultRoles.includes(d.name)
+    );
+    this.log.info(`Creating states for ${validDevices.length} devices`);
+    let createdStates = 0;
+    const startMs = Date.now();
+    for (const device of validDevices) {
+      createdStates += await this.createOrUpdateSingleDeviceAsync(device);
+    }
+    this.log.info(
+      `Done. Created ${createdStates} states for ${validDevices.length} devices in ${Date.now() - startMs}ms.`
+    );
   }
-  /**
-   * Is called when adapter shuts down - callback has to be called under any circumstances!
-   *
-   * @param callback - Callback function
-   */
+  async createOrUpdateSingleDeviceAsync(device) {
+    var _a, _b, _c;
+    const deviceRoot = `${this.namespace}.${device.name}`;
+    await this.extendObject(deviceRoot, {
+      type: "channel",
+      common: {
+        name: device.name
+      }
+    });
+    let createdStates = 0;
+    for (const state of device.states.filter((s) => s.required)) {
+      const stateName = `${deviceRoot}.${state.name}`;
+      const type = Array.isArray(state.type) ? state.type[0] : (_a = state.type) != null ? _a : "string";
+      await this.extendObject(stateName, {
+        type: "state",
+        common: {
+          name: state.name,
+          type,
+          read: (_b = state.read) != null ? _b : true,
+          write: (_c = state.write) != null ? _c : false,
+          role: state.defaultRole,
+          unit: state.defaultUnit
+        }
+      });
+      createdStates++;
+    }
+    return createdStates;
+  }
   onUnload(callback) {
     try {
-      callback();
     } catch (error) {
       this.log.error(`Error during unloading: ${error.message}`);
+    } finally {
       callback();
     }
   }
-  // If you need to react to object changes, uncomment the following block and the corresponding line in the constructor.
-  // You also need to subscribe to the objects with `this.subscribeObjects`, similar to `this.subscribeStates`.
-  // /**
-  //  * Is called if a subscribed object changes
-  //  */
-  // private onObjectChange(id: string, obj: ioBroker.Object | null | undefined): void {
-  // 	if (obj) {
-  // 		// The object was changed
-  // 		this.log.info(`object ${id} changed: ${JSON.stringify(obj)}`);
-  // 	} else {
-  // 		// The object was deleted
-  // 		this.log.info(`object ${id} deleted`);
-  // 	}
-  // }
-  /**
-   * Is called if a subscribed state changes
-   *
-   * @param id - State ID
-   * @param state - State object
-   */
-  onStateChange(id, state) {
-    if (state) {
-      this.log.info(`state ${id} changed: ${state.val} (ack = ${state.ack})`);
-      if (state.ack === false) {
-        this.log.info(`User command received for ${id}: ${state.val}`);
-      }
-    } else {
-      this.log.info(`state ${id} deleted`);
-    }
-  }
-  // If you need to accept messages in your adapter, uncomment the following block and the corresponding line in the constructor.
-  // /**
-  //  * Some message was sent to this instance over message box. Used by email, pushover, text2speech, ...
-  //  * Using this method requires "common.messagebox" property to be set to true in io-package.json
-  //  */
-  //
-  // private onMessage(obj: ioBroker.Message): void {
-  // 	if (typeof obj === 'object' && obj.message) {
-  // 		if (obj.command === 'send') {
-  // 			// e.g. send email or pushover or whatever
-  // 			this.log.info('send command');
-  // 			// Send response in callback if required
-  // 			if (obj.callback) this.sendTo(obj.from, obj.command, 'Message received', obj.callback);
-  // 		}
-  // 	}
-  // }
 }
 if (require.main !== module) {
   module.exports = (options) => new TestDevices(options);

@@ -1,4 +1,3 @@
-![Logo](admin/test-devices.png)
 # ioBroker.test-devices
 
 [![NPM version](https://img.shields.io/npm/v/iobroker.test-devices.svg)](https://www.npmjs.com/package/iobroker.test-devices)
@@ -10,107 +9,89 @@
 
 **Tests:** ![Test and Release](https://github.com/OlliMartin/ioBroker.test-devices/workflows/Test%20and%20Release/badge.svg)
 
-## test-devices adapter for ioBroker
+>**THIS ADAPTER IS NOT INTENDED TO BE USED PRODUCTIVELY**
+>
+> It should never be published into the latest or stable ioBroker repository!
 
-Adapter to generate and simulate testing devices of different roles
+## Test-Devices for ioBroker Development
 
-## Developer manual
-This section is intended for the developer. It can be deleted later.
+The `test-devices` adapter allows creation and simulation of devices in an automated fashion.
 
-### DISCLAIMER
+It will generate devices that follow the detection rules defined in the [ioBroker.type-detector](https://github.com/ioBroker/ioBroker.type-detector/tree/master) utility, 
+which means the generated devices will follow the semi-standardized patterns so that the `type-detector` will recognize each device. 
+Refer to the [Developer Section](#developer-section) below. 
 
-Please make sure that you consider copyrights and trademarks when you use names or logos of a company and add a disclaimer to your README.
-You can check other adapters for examples or ask in the developer community. Using a name or logo of a company without permission may cause legal problems for you.
+The adapter will acknowledge every state change immediately, which makes it particularly useful for development of adapters
+that rely on the devices of other adapters.
 
-### Getting started
+## Developer Section
 
-You are almost done, only a few steps left:
-1. Create a new repository on GitHub with the name `ioBroker.test-devices`
-1. Initialize the current folder as a new git repository:  
-	```bash
-	git init -b main
-	git add .
-	git commit -m "Initial commit"
-	```
-1. Link your local repository with the one on GitHub:  
-	```bash
-	git remote add origin https://github.com/OlliMartin/ioBroker.test-devices
-	```
+This section outlines the high level architecture behind the `test-devices` adapter.
 
-1. Push all files to the GitHub repo:  
-	```bash
-	git push origin main
-	```
-1. Add a new secret under https://github.com/OlliMartin/ioBroker.test-devices/settings/secrets. It must be named `AUTO_MERGE_TOKEN` and contain a personal access token with push access to the repository, e.g. yours. You can create a new token under https://github.com/settings/tokens.
+1. On startup (`onReady`), the adapter uses the `ChannelDetector.getPatterns()` function of the 
+   [ioBroker.type-detector](https://github.com/ioBroker/ioBroker.type-detector/tree/master) package to retrieve 
+   all possibly known device types and their metadata.
+2. The device metadata is filtered for devices where all `required` states have a matching `defaultRole`
+    - __Note:__ Devices where states exist that are required but do _not_ define a `defaultRole` cannot be handled.
+    
+      At the time of writing (2026-01-09) __no such devices__ exist, which means all devices maintained in `type-detector` will be created
+3. For all valid devices:
+   1. A `channel` with `name=$device.type` is created (no specific metadata)
+   2. Within the created channel, all required states are created with their respective metadata:
+   ```js
+   {
+     type: 'state',
+       common: {
+         name: state.name,
+         type: type,
+         read: state.read ?? true, // If the value is omitted in type-detector we assume readable
+         write: state.write ?? false,
+         role: state.defaultRole,
+         unit: state.defaultUnit,
+       }   
+     }
+   }
+   ```
+4. The adapter subscribes to all existing/created states and acknowledges any received value change.
 
-1. Head over to [src/main.ts](src/main.ts) and start programming!
+### Extension of Devices
 
-### Best Practices
-We've collected some [best practices](https://github.com/ioBroker/ioBroker.repositories#development-and-coding-best-practices) regarding ioBroker development and coding in general. If you're new to ioBroker or Node.js, you should
-check them out. If you're already experienced, you should also take a look at them - you might learn something new :)
+With the above approach most devices only have one or two different states, and it is unlikely that they are truly usable.
+(As of writing, there are 41 devices defined with a total of 496 states, but only 50 are required)
+However, maintaining device-specific configuration outside the `type-detector` utility is discouraged, so the following approach is proposed
+to make the devices appear more like they would exist in the real world:
 
-### State Roles
-When creating state objects, it is important to use the correct role for the state. The role defines how the state should be interpreted by visualizations and other adapters. For a list of available roles and their meanings, please refer to the [state roles documentation](https://www.iobroker.net/#en/documentation/dev/stateroles.md).
+We will allow the users to define a per-device mapping of additional states that should be created, where the key 
+of the mapping is the device type and the value is the name of the additional (not required) state.
 
-**Important:** Do not invent your own custom role names. If you need a role that is not part of the official list, please contact the ioBroker developer community for guidance and discussion about adding new roles.
+This changes step 3 in the section above to look up the device in the adapter config, find the additionally requested states 
+(continue if not found) and create them as well - again using the `defaultRole` and other metadata. 
+**TBD:** The typescript type seems to be straight forward to define, basically `Record<Types, string[] | undefined>` *,
+but populating the types in the JSON UI may not be as easy.
 
-### Scripts in `package.json`
-Several npm scripts are predefined for your convenience. You can run them using `npm run <scriptname>`
-| Script name | Description |
-|-------------|-------------|
-| `build` | Compile the TypeScript sources. |
-| `watch` | Compile the TypeScript sources and watch for changes. |
-| `test:ts` | Executes the tests you defined in `*.test.ts` files. |
-| `test:package` | Ensures your `package.json` and `io-package.json` are valid. |
-| `test:integration` | Tests the adapter startup with an actual instance of ioBroker. |
-| `test` | Performs a minimal test run on package files and your tests. |
-| `check` | Performs a type-check on your code (without compiling anything). |
-| `lint` | Runs `ESLint` to check your code for formatting errors and potential bugs. |
-| `translate` | Translates texts in your adapter to all required languages, see [`@iobroker/adapter-dev`](https://github.com/ioBroker/adapter-dev#manage-translations) for more details. |
-| `release` | Creates a new release, see [`@alcalzone/release-script`](https://github.com/AlCalzone/release-script#usage) for more details. |
+Ideally, the solution allows us to deliver a basic setup for additional states within the `io-package.json` 
+(in `$.native.mapping` or similar property), which still can be edited through the JSON UI. 
+This way the developer/consumer can still pull in more states if the standard configuration does not suffice.
 
-### Configuring the compilation
-The adapter template uses [esbuild](https://esbuild.github.io/) to compile TypeScript and/or React code. You can configure many compilation settings 
-either in `tsconfig.json` or by changing options for the build tasks. These options are described in detail in the
-[`@iobroker/adapter-dev` documentation](https://github.com/ioBroker/adapter-dev#compile-adapter-files).
+> Thinking Aloud: The JSON UI is literally a JSON file, so we cannot rely on any of the types provided by `type-detector` anyway.
 
-### Writing tests
-When done right, testing code is invaluable, because it gives you the 
-confidence to change your code while knowing exactly if and when 
-something breaks. A good read on the topic of test-driven development 
-is https://hackernoon.com/introduction-to-test-driven-development-tdd-61a13bc92d92. 
-Although writing tests before the code might seem strange at first, but it has very 
-clear upsides.
+Since we are not able to dynamically populate the static JSON file we should automate the process, i.e. have a NPM script
+that (re-)generates the JSON UI and `$.native.mapping` property pre-build.
 
-The template provides you with basic tests for the adapter startup and package files.
-It is recommended that you add your own tests into the mix.
+We would need a source-of-truth for the script where the standard mapping (additional states) are defined; Then we can generate 
+a UI where each device gets a section and a list of states with checkboxes each. The checkboxes reference a value inside the 
+adapter configuration (defaulted from `$.native`) to determine their value.
 
-### Publishing the adapter
-Using GitHub Actions, you can enable automatic releases on npm whenever you push a new git tag that matches the form 
-`v<major>.<minor>.<patch>`. We **strongly recommend** that you do. The necessary steps are described in `.github/workflows/test-and-release.yml`.
+\* Having the type as trivial as this will probably not work together with the JSON UI.
 
-Since you installed the release script, you can create a new
-release simply by calling:
-```bash
-npm run release
-```
-Additional command line options for the release script are explained in the
-[release-script documentation](https://github.com/AlCalzone/release-script#command-line).
+### Triggering State Updates
 
-To get your adapter released in ioBroker, please refer to the documentation 
-of [ioBroker.repositories](https://github.com/ioBroker/ioBroker.repositories#requirements-for-adapter-to-get-added-to-the-latest-repository).
+As a first step, acknowledging state updates done through the UI should be sufficient.
 
-### Test the adapter manually with dev-server
-Since you set up `dev-server`, you can use it to run, test and debug your adapter.
+If required, we could extend this to include scheduled updates - for example - or offer a command (probably the wrong naming)
+that updates the provided state. The latter approach works well for testing scenarios where the actual testing happens outside
+of ioBroker and there is the possibility to send these commands from the system under test.
 
-You may start `dev-server` by calling from your dev directory:
-```bash
-dev-server watch
-```
-
-The ioBroker.admin interface will then be available at http://localhost:undefined/
-
-Please refer to the [`dev-server` documentation](https://github.com/ioBroker/dev-server#command-line) for more details.
 
 ## Changelog
 <!--
