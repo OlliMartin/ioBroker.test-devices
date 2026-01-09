@@ -75,9 +75,9 @@ make an educated guess what the values should be. The following table illustrate
 |--------------|-----------|-----------|
 |              |           |           |
 
-If required, we could extend this to include scheduled updates - for example - or offer a command (probably the wrong naming)
+If required, we could extend this to include scheduled updates - for example - or offer a message (`onMessage`)
 that updates the provided state. The latter approach works well for testing scenarios where the actual testing happens outside
-of ioBroker and there is the possibility to send these commands from the system under test.
+of ioBroker and there is the possibility to send these messages from the system under test.
 
 ### Testing
 
