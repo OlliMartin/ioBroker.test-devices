@@ -8,6 +8,30 @@ type DeviceDefinition = {
 	name: string;
 };
 
+type StateWithDeviceRef = ExternalDetectorState & {
+	deviceRef: DeviceDefinition;
+};
+
+const getStateType = (state: ExternalDetectorState, fallback?: ioBroker.CommonType): ioBroker.CommonType => {
+	return Array.isArray(state.type) ? state.type[0] : (state.type ?? fallback ?? 'string');
+};
+
+const printMissingDefaultRoleMarkdown = (states: StateWithDeviceRef[]): void => {
+	const sortedStates = [...states] // Assuming sort is stable.
+		.sort((a, b) => a.name.localeCompare(b.name))
+		.sort((a, b) => a.deviceRef.name.localeCompare(b.deviceRef.name));
+
+	let output = '| Device | Name | Type | Role Regex |\n';
+	output += '| - | - | - | - |\n';
+
+	/*                                                                                   *caugh* */
+	for (const state of sortedStates) {
+		output += `| ${state.deviceRef.name} | ${state.name} | ${getStateType(state, 'N/A' as any)} | \`${state.role}\` |\n`;
+	}
+
+	console.log(output);
+};
+
 class TestDevices extends utils.Adapter {
 	public constructor(options: Partial<utils.AdapterOptions> = {}) {
 		super({
@@ -16,8 +40,6 @@ class TestDevices extends utils.Adapter {
 		});
 		this.on('ready', this.onReady.bind(this));
 		this.on('unload', this.onUnload.bind(this));
-
-		this.config.test.unknown = [];
 	}
 
 	private async onReady(): Promise<void> {
@@ -28,10 +50,27 @@ class TestDevices extends utils.Adapter {
 			name: k,
 		}));
 
-		console.log(
-			'State count total:',
-			allDevices.map(d => d.states).reduce((prev, curr) => [...prev, ...curr], []).length,
+		const mapState: (device: DeviceDefinition, state: ExternalDetectorState) => StateWithDeviceRef = (
+			device,
+			state,
+		) => ({ ...state, deviceRef: device });
+
+		const allStates = allDevices.reduce(
+			(prev: StateWithDeviceRef[], curr) => [...prev, ...curr.states.map(s => mapState(curr, s))],
+			[],
 		);
+
+		this.log.info(`State count total: ${allStates.length}`);
+
+		const statesWithoutDefaultRole = allStates.filter(s => !s.defaultRole);
+
+		if (statesWithoutDefaultRole.length > 0) {
+			this.log.info(
+				`States without default role: ${statesWithoutDefaultRole.length} - [${statesWithoutDefaultRole.map(s => s.name).join(', ')}]`,
+			);
+
+			printMissingDefaultRoleMarkdown(statesWithoutDefaultRole);
+		}
 
 		const devicesWithMissingDefaultRoles = allDevices.filter(
 			d => d.states.filter(s => s.required && !s.defaultRole).length > 0,
@@ -76,7 +115,8 @@ class TestDevices extends utils.Adapter {
 		let createdStates = 0;
 		for (const state of device.states.filter(s => s.required)) {
 			const stateName = `${deviceRoot}.${state.name}`;
-			const type = Array.isArray(state.type) ? state.type[0] : (state.type ?? 'string');
+			const type = getStateType(state);
+
 			await this.extendObject(stateName, {
 				type: 'state',
 				common: {

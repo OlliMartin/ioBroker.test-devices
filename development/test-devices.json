@@ -1,0 +1,1141 @@
+{
+  "test-devices.0.airCondition": {
+    "type": "channel",
+    "common": {
+      "name": "airCondition"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615930,
+    "_id": "test-devices.0.airCondition"
+  },
+  "test-devices.0.airCondition.MODE": {
+    "common": {
+      "name": "MODE",
+      "read": true,
+      "write": true,
+      "role": "level.mode.airconditioner",
+      "type": "number"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615932,
+    "_id": "test-devices.0.airCondition.MODE",
+    "type": "state"
+  },
+  "test-devices.0.airCondition.SET": {
+    "common": {
+      "name": "SET",
+      "read": true,
+      "write": true,
+      "role": "level.temperature",
+      "type": "number",
+      "unit": "°C"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615931,
+    "_id": "test-devices.0.airCondition.SET",
+    "type": "state"
+  },
+  "test-devices.0.blindButtons": {
+    "type": "channel",
+    "common": {
+      "name": "blindButtons"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615940,
+    "_id": "test-devices.0.blindButtons"
+  },
+  "test-devices.0.blindButtons.CLOSE": {
+    "common": {
+      "name": "CLOSE",
+      "read": true,
+      "write": true,
+      "role": "button.close.blind",
+      "type": "boolean"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615943,
+    "_id": "test-devices.0.blindButtons.CLOSE",
+    "type": "state"
+  },
+  "test-devices.0.blindButtons.OPEN": {
+    "common": {
+      "name": "OPEN",
+      "read": true,
+      "write": true,
+      "role": "button.open.blind",
+      "type": "boolean"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615942,
+    "_id": "test-devices.0.blindButtons.OPEN",
+    "type": "state"
+  },
+  "test-devices.0.blindButtons.STOP": {
+    "common": {
+      "name": "STOP",
+      "read": true,
+      "write": true,
+      "role": "button.stop.blind",
+      "type": "boolean"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615941,
+    "_id": "test-devices.0.blindButtons.STOP",
+    "type": "state"
+  },
+  "test-devices.0.blinds": {
+    "type": "channel",
+    "common": {
+      "name": "blinds"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615938,
+    "_id": "test-devices.0.blinds"
+  },
+  "test-devices.0.blinds.SET": {
+    "common": {
+      "name": "SET",
+      "read": true,
+      "write": true,
+      "role": "level.blind",
+      "type": "number",
+      "unit": "%"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615939,
+    "_id": "test-devices.0.blinds.SET",
+    "type": "state"
+  },
+  "test-devices.0.button": {
+    "type": "channel",
+    "common": {
+      "name": "button"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615980,
+    "_id": "test-devices.0.button"
+  },
+  "test-devices.0.button.SET": {
+    "common": {
+      "name": "SET",
+      "read": false,
+      "write": true,
+      "role": "button",
+      "type": "boolean"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615981,
+    "_id": "test-devices.0.button.SET",
+    "type": "state"
+  },
+  "test-devices.0.buttonSensor": {
+    "type": "channel",
+    "common": {
+      "name": "buttonSensor"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615982,
+    "_id": "test-devices.0.buttonSensor"
+  },
+  "test-devices.0.buttonSensor.PRESS": {
+    "common": {
+      "name": "PRESS",
+      "read": true,
+      "write": false,
+      "role": "button.press",
+      "type": "boolean"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615983,
+    "_id": "test-devices.0.buttonSensor.PRESS",
+    "type": "state"
+  },
+  "test-devices.0.camera": {
+    "type": "channel",
+    "common": {
+      "name": "camera"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615949,
+    "_id": "test-devices.0.camera"
+  },
+  "test-devices.0.camera.URL": {
+    "common": {
+      "name": "URL",
+      "read": true,
+      "write": false,
+      "role": "link.camera",
+      "type": "string"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615949,
+    "_id": "test-devices.0.camera.URL",
+    "type": "state"
+  },
+  "test-devices.0.chart": {
+    "type": "channel",
+    "common": {
+      "name": "chart"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615906,
+    "_id": "test-devices.0.chart"
+  },
+  "test-devices.0.cie": {
+    "type": "channel",
+    "common": {
+      "name": "cie"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615922,
+    "_id": "test-devices.0.cie"
+  },
+  "test-devices.0.cie.CIE": {
+    "common": {
+      "name": "CIE",
+      "read": true,
+      "write": true,
+      "role": "level.color.cie",
+      "type": "string"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615923,
+    "_id": "test-devices.0.cie.CIE",
+    "type": "state"
+  },
+  "test-devices.0.ct": {
+    "type": "channel",
+    "common": {
+      "name": "ct"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615927,
+    "_id": "test-devices.0.ct"
+  },
+  "test-devices.0.ct.TEMPERATURE": {
+    "common": {
+      "name": "TEMPERATURE",
+      "read": true,
+      "write": true,
+      "role": "level.color.temperature",
+      "type": "number",
+      "unit": "°K"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615927,
+    "_id": "test-devices.0.ct.TEMPERATURE",
+    "type": "state"
+  },
+  "test-devices.0.dimmer": {
+    "type": "channel",
+    "common": {
+      "name": "dimmer"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615964,
+    "_id": "test-devices.0.dimmer"
+  },
+  "test-devices.0.dimmer.SET": {
+    "common": {
+      "name": "SET",
+      "read": true,
+      "write": true,
+      "role": "level.dimmer",
+      "type": "number",
+      "unit": "%"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615965,
+    "_id": "test-devices.0.dimmer.SET",
+    "type": "state"
+  },
+  "test-devices.0.door": {
+    "type": "channel",
+    "common": {
+      "name": "door"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615962,
+    "_id": "test-devices.0.door"
+  },
+  "test-devices.0.door.ACTUAL": {
+    "common": {
+      "name": "ACTUAL",
+      "read": true,
+      "write": false,
+      "role": "sensor.door",
+      "type": "boolean"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615963,
+    "_id": "test-devices.0.door.ACTUAL",
+    "type": "state"
+  },
+  "test-devices.0.fireAlarm": {
+    "type": "channel",
+    "common": {
+      "name": "fireAlarm"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615959,
+    "_id": "test-devices.0.fireAlarm"
+  },
+  "test-devices.0.fireAlarm.ACTUAL": {
+    "common": {
+      "name": "ACTUAL",
+      "read": true,
+      "write": false,
+      "role": "sensor.alarm.fire",
+      "type": "boolean"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615960,
+    "_id": "test-devices.0.fireAlarm.ACTUAL",
+    "type": "state"
+  },
+  "test-devices.0.floodAlarm": {
+    "type": "channel",
+    "common": {
+      "name": "floodAlarm"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615961,
+    "_id": "test-devices.0.floodAlarm"
+  },
+  "test-devices.0.floodAlarm.ACTUAL": {
+    "common": {
+      "name": "ACTUAL",
+      "read": true,
+      "write": false,
+      "role": "sensor.alarm.flood",
+      "type": "boolean"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615961,
+    "_id": "test-devices.0.floodAlarm.ACTUAL",
+    "type": "state"
+  },
+  "test-devices.0.gate": {
+    "type": "channel",
+    "common": {
+      "name": "gate"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615944,
+    "_id": "test-devices.0.gate"
+  },
+  "test-devices.0.gate.SET": {
+    "common": {
+      "name": "SET",
+      "read": true,
+      "write": true,
+      "role": "switch.gate",
+      "type": "boolean"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615945,
+    "_id": "test-devices.0.gate.SET",
+    "type": "state"
+  },
+  "test-devices.0.hue": {
+    "type": "channel",
+    "common": {
+      "name": "hue"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615924,
+    "_id": "test-devices.0.hue"
+  },
+  "test-devices.0.hue.HUE": {
+    "common": {
+      "name": "HUE",
+      "read": true,
+      "write": true,
+      "role": "level.color.hue",
+      "type": "number",
+      "unit": "°"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615925,
+    "_id": "test-devices.0.hue.HUE",
+    "type": "state"
+  },
+  "test-devices.0.humidity": {
+    "type": "channel",
+    "common": {
+      "name": "humidity"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615986,
+    "_id": "test-devices.0.humidity"
+  },
+  "test-devices.0.humidity.ACTUAL": {
+    "common": {
+      "name": "ACTUAL",
+      "read": true,
+      "write": false,
+      "role": "value.humidity",
+      "type": "number",
+      "unit": "%"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615987,
+    "_id": "test-devices.0.humidity.ACTUAL",
+    "type": "state"
+  },
+  "test-devices.0.illuminance": {
+    "type": "channel",
+    "common": {
+      "name": "illuminance"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615988,
+    "_id": "test-devices.0.illuminance"
+  },
+  "test-devices.0.illuminance.ACTUAL": {
+    "common": {
+      "name": "ACTUAL",
+      "read": true,
+      "write": false,
+      "role": "value.brightness",
+      "type": "number",
+      "unit": "lux"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615988,
+    "_id": "test-devices.0.illuminance.ACTUAL",
+    "type": "state"
+  },
+  "test-devices.0.image": {
+    "type": "channel",
+    "common": {
+      "name": "image"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615989,
+    "_id": "test-devices.0.image"
+  },
+  "test-devices.0.image.URL": {
+    "common": {
+      "name": "URL",
+      "read": true,
+      "write": false,
+      "role": "icon",
+      "type": "string"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615990,
+    "_id": "test-devices.0.image.URL",
+    "type": "state"
+  },
+  "test-devices.0.info": {
+    "type": "channel",
+    "common": {
+      "name": "info"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615994,
+    "_id": "test-devices.0.info"
+  },
+  "test-devices.0.info.ACTUAL": {
+    "common": {
+      "name": "ACTUAL",
+      "read": true,
+      "write": false,
+      "role": "state",
+      "type": "string"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615995,
+    "_id": "test-devices.0.info.ACTUAL",
+    "type": "state"
+  },
+  "test-devices.0.levelSlider": {
+    "type": "channel",
+    "common": {
+      "name": "levelSlider"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615977,
+    "_id": "test-devices.0.levelSlider"
+  },
+  "test-devices.0.levelSlider.SET": {
+    "common": {
+      "name": "SET",
+      "read": true,
+      "write": true,
+      "role": "level",
+      "type": "number",
+      "unit": "%"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615978,
+    "_id": "test-devices.0.levelSlider.SET",
+    "type": "state"
+  },
+  "test-devices.0.light": {
+    "type": "channel",
+    "common": {
+      "name": "light"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615966,
+    "_id": "test-devices.0.light"
+  },
+  "test-devices.0.light.SET": {
+    "common": {
+      "name": "SET",
+      "read": true,
+      "write": true,
+      "role": "switch.light",
+      "type": "boolean"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615967,
+    "_id": "test-devices.0.light.SET",
+    "type": "state",
+    "val": true,
+    "ack": false
+  },
+  "test-devices.0.location": {
+    "type": "channel",
+    "common": {
+      "name": "location"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615971,
+    "_id": "test-devices.0.location"
+  },
+  "test-devices.0.location.LATITUDE": {
+    "common": {
+      "name": "LATITUDE",
+      "read": true,
+      "write": false,
+      "role": "value.gps.latitude",
+      "type": "number",
+      "unit": "°"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615973,
+    "_id": "test-devices.0.location.LATITUDE",
+    "type": "state"
+  },
+  "test-devices.0.location.LONGITUDE": {
+    "common": {
+      "name": "LONGITUDE",
+      "read": true,
+      "write": false,
+      "role": "value.gps.longitude",
+      "type": "number",
+      "unit": "°"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615972,
+    "_id": "test-devices.0.location.LONGITUDE",
+    "type": "state"
+  },
+  "test-devices.0.locationOne": {
+    "type": "channel",
+    "common": {
+      "name": "locationOne"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615970,
+    "_id": "test-devices.0.locationOne"
+  },
+  "test-devices.0.locationOne.GPS": {
+    "common": {
+      "name": "GPS",
+      "read": true,
+      "write": false,
+      "role": "value.gps",
+      "type": "string"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615971,
+    "_id": "test-devices.0.locationOne.GPS",
+    "type": "state"
+  },
+  "test-devices.0.lock": {
+    "type": "channel",
+    "common": {
+      "name": "lock"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615950,
+    "_id": "test-devices.0.lock"
+  },
+  "test-devices.0.lock.SET": {
+    "common": {
+      "name": "SET",
+      "read": true,
+      "write": true,
+      "role": "switch.lock",
+      "type": "boolean"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615952,
+    "_id": "test-devices.0.lock.SET",
+    "type": "state"
+  },
+  "test-devices.0.mediaPlayer": {
+    "type": "channel",
+    "common": {
+      "name": "mediaPlayer"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615907,
+    "_id": "test-devices.0.mediaPlayer"
+  },
+  "test-devices.0.mediaPlayer.STATE": {
+    "common": {
+      "name": "STATE",
+      "read": true,
+      "write": false,
+      "role": "media.state",
+      "type": "boolean"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615908,
+    "_id": "test-devices.0.mediaPlayer.STATE",
+    "type": "state"
+  },
+  "test-devices.0.motion": {
+    "type": "channel",
+    "common": {
+      "name": "motion"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615953,
+    "_id": "test-devices.0.motion"
+  },
+  "test-devices.0.motion.ACTUAL": {
+    "common": {
+      "name": "ACTUAL",
+      "read": true,
+      "write": false,
+      "role": "sensor.motion",
+      "type": "boolean"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615954,
+    "_id": "test-devices.0.motion.ACTUAL",
+    "type": "state"
+  },
+  "test-devices.0.percentage": {
+    "type": "channel",
+    "common": {
+      "name": "percentage"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615976,
+    "_id": "test-devices.0.percentage"
+  },
+  "test-devices.0.percentage.SET": {
+    "common": {
+      "name": "SET",
+      "read": true,
+      "write": true,
+      "role": "level",
+      "type": "number",
+      "unit": "%"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615976,
+    "_id": "test-devices.0.percentage.SET",
+    "type": "state"
+  },
+  "test-devices.0.rgb": {
+    "type": "channel",
+    "common": {
+      "name": "rgb"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615914,
+    "_id": "test-devices.0.rgb"
+  },
+  "test-devices.0.rgb.BLUE": {
+    "common": {
+      "name": "BLUE",
+      "read": true,
+      "write": true,
+      "role": "level.color.blue",
+      "type": "number"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615917,
+    "_id": "test-devices.0.rgb.BLUE",
+    "type": "state"
+  },
+  "test-devices.0.rgb.GREEN": {
+    "common": {
+      "name": "GREEN",
+      "read": true,
+      "write": true,
+      "role": "level.color.green",
+      "type": "number"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615916,
+    "_id": "test-devices.0.rgb.GREEN",
+    "type": "state"
+  },
+  "test-devices.0.rgb.RED": {
+    "common": {
+      "name": "RED",
+      "read": true,
+      "write": true,
+      "role": "level.color.red",
+      "type": "number"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615915,
+    "_id": "test-devices.0.rgb.RED",
+    "type": "state"
+  },
+  "test-devices.0.rgbSingle": {
+    "type": "channel",
+    "common": {
+      "name": "rgbSingle"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615920,
+    "_id": "test-devices.0.rgbSingle"
+  },
+  "test-devices.0.rgbSingle.RGB": {
+    "common": {
+      "name": "RGB",
+      "read": true,
+      "write": true,
+      "role": "level.color.rgb",
+      "type": "string"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615921,
+    "_id": "test-devices.0.rgbSingle.RGB",
+    "type": "state"
+  },
+  "test-devices.0.rgbwSingle": {
+    "type": "channel",
+    "common": {
+      "name": "rgbwSingle"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615918,
+    "_id": "test-devices.0.rgbwSingle"
+  },
+  "test-devices.0.rgbwSingle.RGBW": {
+    "common": {
+      "name": "RGBW",
+      "read": true,
+      "write": true,
+      "role": "level.color.rgbw",
+      "type": "string"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615919,
+    "_id": "test-devices.0.rgbwSingle.RGBW",
+    "type": "state"
+  },
+  "test-devices.0.socket": {
+    "type": "channel",
+    "common": {
+      "name": "socket"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615979,
+    "_id": "test-devices.0.socket"
+  },
+  "test-devices.0.socket.SET": {
+    "common": {
+      "name": "SET",
+      "read": true,
+      "write": true,
+      "role": "switch",
+      "type": "boolean"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615980,
+    "_id": "test-devices.0.socket.SET",
+    "type": "state"
+  },
+  "test-devices.0.temperature": {
+    "type": "channel",
+    "common": {
+      "name": "temperature"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615984,
+    "_id": "test-devices.0.temperature"
+  },
+  "test-devices.0.temperature.ACTUAL": {
+    "common": {
+      "name": "ACTUAL",
+      "read": true,
+      "write": false,
+      "role": "value.temperature",
+      "type": "number",
+      "unit": "°C"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615985,
+    "_id": "test-devices.0.temperature.ACTUAL",
+    "type": "state"
+  },
+  "test-devices.0.thermostat": {
+    "type": "channel",
+    "common": {
+      "name": "thermostat"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615933,
+    "_id": "test-devices.0.thermostat"
+  },
+  "test-devices.0.thermostat.SET": {
+    "common": {
+      "name": "SET",
+      "read": true,
+      "write": true,
+      "role": "level.temperature",
+      "type": "number",
+      "unit": "°C"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615934,
+    "_id": "test-devices.0.thermostat.SET",
+    "type": "state"
+  },
+  "test-devices.0.vacuumCleaner": {
+    "type": "channel",
+    "common": {
+      "name": "vacuumCleaner"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615935,
+    "_id": "test-devices.0.vacuumCleaner"
+  },
+  "test-devices.0.vacuumCleaner.MODE": {
+    "common": {
+      "name": "MODE",
+      "read": true,
+      "write": true,
+      "role": "level.mode.cleanup",
+      "type": "number"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615937,
+    "_id": "test-devices.0.vacuumCleaner.MODE",
+    "type": "state"
+  },
+  "test-devices.0.vacuumCleaner.POWER": {
+    "common": {
+      "name": "POWER",
+      "read": true,
+      "write": true,
+      "role": "switch.power",
+      "type": "boolean"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615936,
+    "_id": "test-devices.0.vacuumCleaner.POWER",
+    "type": "state"
+  },
+  "test-devices.0.volume": {
+    "type": "channel",
+    "common": {
+      "name": "volume"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615968,
+    "_id": "test-devices.0.volume"
+  },
+  "test-devices.0.volume.SET": {
+    "common": {
+      "name": "SET",
+      "read": true,
+      "write": true,
+      "role": "level.volume",
+      "type": "number",
+      "unit": "%"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615969,
+    "_id": "test-devices.0.volume.SET",
+    "type": "state"
+  },
+  "test-devices.0.volumeGroup": {
+    "type": "channel",
+    "common": {
+      "name": "volumeGroup"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615974,
+    "_id": "test-devices.0.volumeGroup"
+  },
+  "test-devices.0.volumeGroup.SET": {
+    "common": {
+      "name": "SET",
+      "read": true,
+      "write": true,
+      "role": "level.volume.group",
+      "type": "number",
+      "unit": "%"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615975,
+    "_id": "test-devices.0.volumeGroup.SET",
+    "type": "state"
+  },
+  "test-devices.0.warning": {
+    "type": "channel",
+    "common": {
+      "name": "warning"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615928,
+    "_id": "test-devices.0.warning"
+  },
+  "test-devices.0.warning.LEVEL": {
+    "common": {
+      "name": "LEVEL",
+      "read": true,
+      "write": false,
+      "role": "value.warning",
+      "type": "string"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615929,
+    "_id": "test-devices.0.warning.LEVEL",
+    "type": "state"
+  },
+  "test-devices.0.weatherCurrent": {
+    "type": "channel",
+    "common": {
+      "name": "weatherCurrent"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615946,
+    "_id": "test-devices.0.weatherCurrent"
+  },
+  "test-devices.0.weatherCurrent.ACTUAL": {
+    "common": {
+      "name": "ACTUAL",
+      "read": true,
+      "write": false,
+      "role": "value.temperature",
+      "type": "number",
+      "unit": "°C"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615947,
+    "_id": "test-devices.0.weatherCurrent.ACTUAL",
+    "type": "state"
+  },
+  "test-devices.0.weatherCurrent.ICON": {
+    "common": {
+      "name": "ICON",
+      "read": true,
+      "write": false,
+      "role": "weather.icon",
+      "type": "string"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615948,
+    "_id": "test-devices.0.weatherCurrent.ICON",
+    "type": "state"
+  },
+  "test-devices.0.weatherForecast": {
+    "type": "channel",
+    "common": {
+      "name": "weatherForecast"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615910,
+    "_id": "test-devices.0.weatherForecast"
+  },
+  "test-devices.0.weatherForecast.ICON": {
+    "common": {
+      "name": "ICON",
+      "read": true,
+      "write": false,
+      "role": "weather.icon.forecast.0",
+      "type": "string"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615911,
+    "_id": "test-devices.0.weatherForecast.ICON",
+    "type": "state"
+  },
+  "test-devices.0.weatherForecast.TEMP_MAX": {
+    "common": {
+      "name": "TEMP_MAX",
+      "read": true,
+      "write": false,
+      "role": "value.temperature.max.forecast.0",
+      "type": "number"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615913,
+    "_id": "test-devices.0.weatherForecast.TEMP_MAX",
+    "type": "state"
+  },
+  "test-devices.0.weatherForecast.TEMP_MIN": {
+    "common": {
+      "name": "TEMP_MIN",
+      "read": true,
+      "write": false,
+      "role": "value.temperature.min.forecast.0",
+      "type": "number"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615912,
+    "_id": "test-devices.0.weatherForecast.TEMP_MIN",
+    "type": "state"
+  },
+  "test-devices.0.window": {
+    "type": "channel",
+    "common": {
+      "name": "window"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615955,
+    "_id": "test-devices.0.window"
+  },
+  "test-devices.0.window.ACTUAL": {
+    "common": {
+      "name": "ACTUAL",
+      "read": true,
+      "write": false,
+      "role": "sensor.window",
+      "type": "boolean"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615956,
+    "_id": "test-devices.0.window.ACTUAL",
+    "type": "state"
+  },
+  "test-devices.0.windowTilt": {
+    "type": "channel",
+    "common": {
+      "name": "windowTilt"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615957,
+    "_id": "test-devices.0.windowTilt"
+  },
+  "test-devices.0.windowTilt.ACTUAL": {
+    "common": {
+      "name": "ACTUAL",
+      "read": true,
+      "write": false,
+      "role": "value.window",
+      "type": "number"
+    },
+    "from": "system.adapter.test-devices.0",
+    "user": "system.user.admin",
+    "ts": 1767975615958,
+    "_id": "test-devices.0.windowTilt.ACTUAL",
+    "type": "state"
+  },
+  "test-devices.admin": {
+    "type": "meta",
+    "common": {
+      "name": "admin",
+      "type": "admin"
+    },
+    "from": "system.host.dev-test-devices-oma-desktop.cli",
+    "ts": 1767966045758,
+    "native": {},
+    "_id": "test-devices.admin"
+  }
+}

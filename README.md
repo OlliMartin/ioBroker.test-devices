@@ -80,9 +80,11 @@ that (re-)generates the JSON UI and `$.native.mapping` property pre-build.
 
 We would need a source-of-truth for the script where the standard mapping (additional states) are defined; Then we can generate 
 a UI where each device gets a section and a list of states with checkboxes each. The checkboxes reference a value inside the 
-adapter configuration (defaulted from `$.native`) to determine their value.
+adapter configuration (defaulted from `$.native`) to determine their value. **
 
 \* Having the type as trivial as this will probably not work together with the JSON UI.
+
+\** We need to exclude non-required states without a `defaultRole` populated 
 
 ### Triggering State Updates
 
@@ -92,6 +94,56 @@ If required, we could extend this to include scheduled updates - for example - o
 that updates the provided state. The latter approach works well for testing scenarios where the actual testing happens outside
 of ioBroker and there is the possibility to send these commands from the system under test.
 
+### Testing
+
+The goal of the adapter testing is pretty clear:
+
+We want all created/simulated devices to pass as the device _itself_ when identified by the `type-detector` utility.
+
+It should be possible to verify this via integration tests, where the tests verify that each individual type 
+(defined within `type-detector`) has at least one match after the adapter is ready.
+
+For stability, and since we have a very high dependency on `type-detector`, it should be ensured that each device defined
+there can be created in this adapter. This test will (automatically) enforce that all types available are actually creatable 
+in the scenario where the `type-detector` dependency was upgraded.
+In case this test fails we may communicate it to the maintainer of `type-detector`, since it only happens if a state has no default role.
+
+### Misc
+
+As of writing (2026-01-09), there exist 26 states in the `type-detector` utility that do not define a `defaultRole`:
+
+| Device          | Name                   | Type   | Role Regex                                      |
+|-----------------|------------------------|--------|-------------------------------------------------|
+| chart           | CHART                  | N/A    | `undefined`                                     |
+| cie             | BRIGHTNESS             | number | `/^level\.brightness$/`                         |
+| ct              | BRIGHTNESS             | number | `/^level\.brightness$/`                         |
+| hue             | BRIGHTNESS             | number | `/^level\.brightness$/`                         |
+| mediaPlayer     | COVER                  | string | `/^media\.cover(\..*)$/`                        |
+| mediaPlayer     | IGNORE                 | N/A    | `undefined`                                     |
+| rgb             | BRIGHTNESS             | number | `/^level\.brightness$/`                         |
+| rgbSingle       | BRIGHTNESS             | number | `/^level\.brightness$/`                         |
+| rgbwSingle      | BRIGHTNESS             | number | `/^level\.brightness$/`                         |
+| vacuumCleaner   | MAP_URL                | string | `/vacuum\.map\.url$/`                           |
+| warning         | START                  | string | `/^date$/`                                      |
+| weatherForecast | DATE%d                 | string | `/^date\.forecast\.(\d+)$/`                     |
+| weatherForecast | DOW%d                  | string | `/^dayofweek\.forecast\.(\d+)$/`                |
+| weatherForecast | HUMIDITY_MAX%d         | number | `/^value\.humidity\.max\.forecast\.(\d+)$/`     |
+| weatherForecast | HUMIDITY%d             | number | `/^value\.humidity\.forecast\.(\d+)$/`          |
+| weatherForecast | ICON%d                 | string | `/^weather\.icon\.forecast.(\d+)$/`             |
+| weatherForecast | PRECIPITATION_CHANCE%d | number | `/^value\.precipitation\.forecast\.(\d+)$/`     |
+| weatherForecast | PRECIPITATION%d        | number | `/^value\.precipitation\.forecast\.(\d+)$/`     |
+| weatherForecast | STATE%d                | string | `/^weather\.state\.forecast\.(\d+)$/`           |
+| weatherForecast | TEMP_MAX%d             | number | `/^value\.temperature\.max\.forecast\.(\d+)$/`  |
+| weatherForecast | TEMP_MIN%d             | number | `/^value\.temperature\.min\.forecast\.(\d+)$/`  |
+| weatherForecast | TEMP%d                 | number | `/^value\.temperature\.forecast\.(\d+)$/`       |
+| weatherForecast | WIND_DIRECTION_STR%d   | string | `/^weather\.direction\.wind\.forecast\.(\d+)$/` |
+| weatherForecast | WIND_DIRECTION%d       | number | `/^value\.direction\.wind\.forecast\.(\d+)$/`   |
+| weatherForecast | WIND_ICON%d            | string | `/^weather\.icon\.wind\.forecast\.(\d+)$/`      |
+| weatherForecast | WIND_SPEED%d           | number | `/^value\.speed\.wind\.forecast\.(\d+)$/`       |
+
+### Object Tree
+
+Refer to exported object tree [here](./development/test-devices.json) for all generated states.
 
 ## Changelog
 <!--

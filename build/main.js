@@ -23,6 +23,20 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 ));
 var utils = __toESM(require("@iobroker/adapter-core"));
 var import_type_detector = __toESM(require("@iobroker/type-detector"));
+const getStateType = (state, fallback) => {
+  var _a, _b;
+  return Array.isArray(state.type) ? state.type[0] : (_b = (_a = state.type) != null ? _a : fallback) != null ? _b : "string";
+};
+const printMissingDefaultRoleMarkdown = (states) => {
+  const sortedStates = [...states].sort((a, b) => a.name.localeCompare(b.name)).sort((a, b) => a.deviceRef.name.localeCompare(b.deviceRef.name));
+  let output = "| Device | Name | Type | Role Regex |\n";
+  output += "| - | - | - | - |\n";
+  for (const state of sortedStates) {
+    output += `| ${state.deviceRef.name} | ${state.name} | ${getStateType(state, "N/A")} | \`${state.role}\` |
+`;
+  }
+  console.log(output);
+};
 class TestDevices extends utils.Adapter {
   constructor(options = {}) {
     super({
@@ -31,7 +45,6 @@ class TestDevices extends utils.Adapter {
     });
     this.on("ready", this.onReady.bind(this));
     this.on("unload", this.onUnload.bind(this));
-    this.config.test.unknown = [];
   }
   async onReady() {
     const knownPatterns = import_type_detector.default.getPatterns();
@@ -39,10 +52,19 @@ class TestDevices extends utils.Adapter {
       ...v,
       name: k
     }));
-    console.log(
-      "State count total:",
-      allDevices.map((d) => d.states).reduce((prev, curr) => [...prev, ...curr], []).length
+    const mapState = (device, state) => ({ ...state, deviceRef: device });
+    const allStates = allDevices.reduce(
+      (prev, curr) => [...prev, ...curr.states.map((s) => mapState(curr, s))],
+      []
     );
+    this.log.info(`State count total: ${allStates.length}`);
+    const statesWithoutDefaultRole = allStates.filter((s) => !s.defaultRole);
+    if (statesWithoutDefaultRole.length > 0) {
+      this.log.info(
+        `States without default role: ${statesWithoutDefaultRole.length} - [${statesWithoutDefaultRole.map((s) => s.name).join(", ")}]`
+      );
+      printMissingDefaultRoleMarkdown(statesWithoutDefaultRole);
+    }
     const devicesWithMissingDefaultRoles = allDevices.filter(
       (d) => d.states.filter((s) => s.required && !s.defaultRole).length > 0
     );
@@ -68,7 +90,7 @@ class TestDevices extends utils.Adapter {
     );
   }
   async createOrUpdateSingleDeviceAsync(device) {
-    var _a, _b, _c;
+    var _a, _b;
     const deviceRoot = `${this.namespace}.${device.name}`;
     await this.extendObject(deviceRoot, {
       type: "channel",
@@ -79,14 +101,14 @@ class TestDevices extends utils.Adapter {
     let createdStates = 0;
     for (const state of device.states.filter((s) => s.required)) {
       const stateName = `${deviceRoot}.${state.name}`;
-      const type = Array.isArray(state.type) ? state.type[0] : (_a = state.type) != null ? _a : "string";
+      const type = getStateType(state);
       await this.extendObject(stateName, {
         type: "state",
         common: {
           name: state.name,
           type,
-          read: (_b = state.read) != null ? _b : true,
-          write: (_c = state.write) != null ? _c : false,
+          read: (_a = state.read) != null ? _a : true,
+          write: (_b = state.write) != null ? _b : false,
           role: state.defaultRole,
           unit: state.defaultUnit
         }
