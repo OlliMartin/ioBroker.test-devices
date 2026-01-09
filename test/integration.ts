@@ -9,7 +9,7 @@ const projectRoot = process.cwd();
 
 const sendToAsync = (harness: any, instance: string, command: string, message?: unknown): Promise<unknown> => {
 	return new Promise(resolve => {
-		harness.sendTo(instance, command, message ?? 'PLACEHOLDER_MESSAGE', resp => {
+		harness.sendTo(instance, command, message ?? 'PLACEHOLDER_MESSAGE', (resp: any) => {
 			resolve(resp as unknown);
 		});
 	});
@@ -84,8 +84,6 @@ tests.integration(projectRoot, {
 					it(`Should generate a button for device ${generationType}.${deviceType}`, async () => {
 						const expectedId = `test-devices.0.triggers.${generationType}.${deviceType}`;
 						const state = await harness.objects.getObjectAsync(expectedId);
-
-						// console.log('REC STATE', state);
 
 						assert.notEqual(state, null, `Expected state ${expectedId} to exist, but it does not.`);
 					});

@@ -80,6 +80,7 @@ class TestDevices extends utils.Adapter {
 	}
 
 	private async onReady(): Promise<void> {
+		const startMs = Date.now();
 		const allDevices = getDeviceMetadata();
 
 		this.analyzeAllStates(allDevices);
@@ -98,6 +99,7 @@ class TestDevices extends utils.Adapter {
 		this.log.info(`Stored state count: ${this.stateNames.length}.`);
 
 		this.setConnected(true);
+		this.log.info(`Start-up finished within ${Date.now() - startMs}ms.`);
 	}
 
 	private readonly validCommands: string[] = ['VERIFY_DEVICE_TYPE', 'GET_DEVICE_STATES'];
@@ -185,10 +187,10 @@ class TestDevices extends utils.Adapter {
 		});
 
 		const deviceRoot = `${deviceType}.${device.name}`;
-		await this.extendObject(deviceType, {
+		await this.extendObject(deviceRoot, {
 			type: 'channel',
 			common: {
-				name: deviceRoot,
+				name: device.name,
 			},
 		});
 

@@ -67,6 +67,7 @@ class TestDevices extends utils.Adapter {
     return TestDevices.triggerFolderName;
   }
   async onReady() {
+    const startMs = Date.now();
     const allDevices = getDeviceMetadata();
     this.analyzeAllStates(allDevices);
     const deviceNamesWithMissingDefaultRoles = this.getDeviceNamesMissingDefaultRoles(allDevices);
@@ -79,6 +80,7 @@ class TestDevices extends utils.Adapter {
     await this.createDeviceChangeTriggersAsync(validDevices);
     this.log.info(`Stored state count: ${this.stateNames.length}.`);
     this.setConnected(true);
+    this.log.info(`Start-up finished within ${Date.now() - startMs}ms.`);
   }
   validCommands = ["VERIFY_DEVICE_TYPE", "GET_DEVICE_STATES"];
   async onMessage(message) {
@@ -149,10 +151,10 @@ class TestDevices extends utils.Adapter {
       }
     });
     const deviceRoot = `${deviceType}.${device.name}`;
-    await this.extendObject(deviceType, {
+    await this.extendObject(deviceRoot, {
       type: "channel",
       common: {
-        name: deviceRoot
+        name: device.name
       }
     });
     const mapStateToJob = (s) => {
