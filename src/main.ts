@@ -1,5 +1,5 @@
 import * as utils from '@iobroker/adapter-core';
-import ChannelDetector, { type ExternalDetectorState, type Types } from '@iobroker/type-detector';
+import ChannelDetector, { type DetectOptions, type ExternalDetectorState, type Types } from '@iobroker/type-detector';
 
 type DeviceDefinition = {
 	states: ExternalDetectorState[];
@@ -17,14 +17,22 @@ type StateCreationJob = ExternalDetectorState & {
 	commonType: ioBroker.CommonType;
 };
 
+type DeviceStatesGenerationType = 'all' | 'required';
+
+const detector: ChannelDetector = new ChannelDetector();
+
+const deviceTypeBlacklist: string[] = ['chart'];
+
 const getDeviceMetadata: () => DeviceDefinition[] = () => {
 	const knownPatterns = ChannelDetector.getPatterns();
 
-	return Object.entries(knownPatterns).map(([k, v]) => ({
-		...v,
-		states: v.states.filter(s => !!s.defaultRole),
-		name: k,
-	}));
+	return Object.entries(knownPatterns)
+		.filter(([k, _]) => !deviceTypeBlacklist.includes(k))
+		.map(([k, v]) => ({
+			...v,
+			states: v.states.filter(s => !!s.defaultRole),
+			name: k,
+		}));
 };
 
 const getStateType = (state: ExternalDetectorState, fallback?: ioBroker.CommonType): ioBroker.CommonType => {
@@ -53,6 +61,7 @@ class TestDevices extends utils.Adapter {
 			...options,
 			name: 'test-devices',
 		});
+		this.on('message', this.onMessage.bind(this));
 		this.on('ready', this.onReady.bind(this));
 		this.on('unload', this.onUnload.bind(this));
 	}
@@ -104,6 +113,20 @@ class TestDevices extends utils.Adapter {
 		this.log.info(
 			`Done. Created ${createdStates} states for ${validDevices.length} devices in ${Date.now() - startMs}ms.`,
 		);
+
+		this.setConnected(true);
+	}
+
+	private async onMessage(message: ioBroker.Message): Promise<void> {
+		if (message.command != 'VERIFY_DEVICE_TYPE' || !message.callback) {
+			return;
+		}
+
+		const deviceType = message.message as string;
+		this.log.debug(`Verifying device type match for ${deviceType}.`);
+		const result = await this.verifyCreatedDevice(deviceType);
+
+		this.sendTo(message.from, message.command, result ? 'SUCCESS' : 'FAIL', message.callback);
 	}
 
 	private async createTopLevelFoldersAsync(): Promise<void> {
@@ -129,7 +152,7 @@ class TestDevices extends utils.Adapter {
 	private async createOrUpdateSingleDeviceAsync(
 		device: DeviceDefinition,
 		folderName: string,
-		prefix: string,
+		prefix: DeviceStatesGenerationType,
 		stateFilter: (state: ExternalDetectorState) => boolean,
 	): Promise<number> {
 		const deviceType = `${this.namespace}.${folderName}.${prefix}`;
@@ -180,9 +203,65 @@ class TestDevices extends utils.Adapter {
 		return allPromises.length;
 	}
 
+	private objectsLastRead: number | null = null;
+	private objectCache: Record<string, ioBroker.Object> | null = null;
+
+	private async getObjectsCachedAsync(): Promise<Record<string, ioBroker.Object>> {
+		if (this.objectCache && this.objectsLastRead && Date.now() - this.objectsLastRead < 60 * 1000) {
+			return this.objectCache;
+		}
+
+		this.objectsLastRead = Date.now();
+		this.objectCache = await this.getForeignObjects(`${this.namespace}.${TestDevices.GetDeviceFolderName()}.*`);
+
+		this.log.debug(
+			`Read ${Object.keys(this.objectCache).length} objects in ${Date.now() - this.objectsLastRead}ms.`,
+		);
+
+		return this.objectCache;
+	}
+
+	private async verifyCreatedDevice(deviceType: string): Promise<boolean> {
+		const objects = await this.getObjectsCachedAsync();
+
+		const deviceGenerationTypes: DeviceStatesGenerationType[] = ['all', 'required'];
+
+		let result = true;
+		for (const generationType of deviceGenerationTypes) {
+			const prefix = `${this.namespace}.${TestDevices.GetDeviceFolderName()}.${generationType}`;
+
+			const expectedId = `${prefix}.${deviceType}`;
+
+			const options: DetectOptions = {
+				objects: objects,
+				id: expectedId,
+			};
+
+			const controls = detector.detect(options);
+
+			if (!controls) {
+				this.log.debug(`No matches found for ${options.id}`);
+				result = false;
+			} else if (controls && controls.length > 1) {
+				const foundDeviceTypes = controls.map(c => c.type).join(', ');
+				if (foundDeviceTypes.includes(deviceType)) {
+					continue;
+				}
+
+				this.log.debug(
+					`Too many matches found for ${options.id}, but none of them matches expected type '${deviceType}': [${foundDeviceTypes}]`,
+				);
+
+				result = false;
+			}
+		}
+
+		return result;
+	}
+
 	private onUnload(callback: () => void): void {
 		try {
-			// nothing to do yet
+			this.setConnected(false);
 		} catch (error) {
 			this.log.error(`Error during unloading: ${(error as Error).message}`);
 		} finally {
@@ -257,6 +336,15 @@ class TestDevices extends utils.Adapter {
 		}
 
 		return deviceNamesWithMissingDefaultRoles;
+	}
+
+	private setConnected(isConnected: boolean): void {
+		void this.setState('info.connection', isConnected, true, error =>
+			// analyse if the state could be set (because of permissions)
+			error
+				? this.log.error(`Can not update this._connected state: ${error}`)
+				: this.log.debug(`connected set to ${isConnected}`),
+		);
 	}
 }
 if (require.main !== module) {

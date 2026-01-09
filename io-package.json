@@ -55,6 +55,7 @@
 		"extIcon": "https://raw.githubusercontent.com/OlliMartin/ioBroker.test-devices/main/admin/test-devices.png",
 		"readme": "https://github.com/OlliMartin/ioBroker.test-devices/blob/main/README.md",
 		"loglevel": "info",
+		"messagebox": true,
 		"tier": 3,
 		"mode": "daemon",
 		"type": "utility",
@@ -80,5 +81,27 @@
 		"option2": "42"
 	},
 	"objects": [],
-	"instanceObjects": []
+	"instanceObjects": [
+		{
+			"_id": "info",
+			"type": "channel",
+			"common": {
+				"name": "Information"
+			},
+			"native": {}
+		},
+		{
+			"_id": "info.connection",
+			"type": "state",
+			"common": {
+				"role": "indicator.connected",
+				"name": "If device states are created",
+				"type": "boolean",
+				"read": true,
+				"write": false,
+				"def": false
+			},
+			"native": {}
+		}
+	]
 }

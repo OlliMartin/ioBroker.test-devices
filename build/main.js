@@ -23,9 +23,11 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 ));
 var utils = __toESM(require("@iobroker/adapter-core"));
 var import_type_detector = __toESM(require("@iobroker/type-detector"));
+const detector = new import_type_detector.default();
+const deviceTypeBlacklist = ["chart"];
 const getDeviceMetadata = () => {
   const knownPatterns = import_type_detector.default.getPatterns();
-  return Object.entries(knownPatterns).map(([k, v]) => ({
+  return Object.entries(knownPatterns).filter(([k, _]) => !deviceTypeBlacklist.includes(k)).map(([k, v]) => ({
     ...v,
     states: v.states.filter((s) => !!s.defaultRole),
     name: k
@@ -51,6 +53,7 @@ class TestDevices extends utils.Adapter {
       ...options,
       name: "test-devices"
     });
+    this.on("message", this.onMessage.bind(this));
     this.on("ready", this.onReady.bind(this));
     this.on("unload", this.onUnload.bind(this));
   }
@@ -91,6 +94,16 @@ class TestDevices extends utils.Adapter {
     this.log.info(
       `Done. Created ${createdStates} states for ${validDevices.length} devices in ${Date.now() - startMs}ms.`
     );
+    this.setConnected(true);
+  }
+  async onMessage(message) {
+    if (message.command != "VERIFY_DEVICE_TYPE" || !message.callback) {
+      return;
+    }
+    const deviceType = message.message;
+    this.log.debug(`Verifying device type match for ${deviceType}.`);
+    const result = await this.verifyCreatedDevice(deviceType);
+    this.sendTo(message.from, message.command, result ? "SUCCESS" : "FAIL", message.callback);
   }
   async createTopLevelFoldersAsync() {
     const fqFolderName = `${this.namespace}.${TestDevices.GetDeviceFolderName()}`;
@@ -151,8 +164,50 @@ class TestDevices extends utils.Adapter {
     await Promise.allSettled(allPromises);
     return allPromises.length;
   }
+  objectsLastRead = null;
+  objectCache = null;
+  async getObjectsCachedAsync() {
+    if (this.objectCache && this.objectsLastRead && Date.now() - this.objectsLastRead < 60 * 1e3) {
+      return this.objectCache;
+    }
+    this.objectsLastRead = Date.now();
+    this.objectCache = await this.getForeignObjects(`${this.namespace}.${TestDevices.GetDeviceFolderName()}.*`);
+    this.log.debug(
+      `Read ${Object.keys(this.objectCache).length} objects in ${Date.now() - this.objectsLastRead}ms.`
+    );
+    return this.objectCache;
+  }
+  async verifyCreatedDevice(deviceType) {
+    const objects = await this.getObjectsCachedAsync();
+    const deviceGenerationTypes = ["all", "required"];
+    let result = true;
+    for (const generationType of deviceGenerationTypes) {
+      const prefix = `${this.namespace}.${TestDevices.GetDeviceFolderName()}.${generationType}`;
+      const expectedId = `${prefix}.${deviceType}`;
+      const options = {
+        objects,
+        id: expectedId
+      };
+      const controls = detector.detect(options);
+      if (!controls) {
+        this.log.debug(`No matches found for ${options.id}`);
+        result = false;
+      } else if (controls && controls.length > 1) {
+        const foundDeviceTypes = controls.map((c) => c.type).join(", ");
+        if (foundDeviceTypes.includes(deviceType)) {
+          continue;
+        }
+        this.log.debug(
+          `Too many matches found for ${options.id}, but none of them matches expected type '${deviceType}': [${foundDeviceTypes}]`
+        );
+        result = false;
+      }
+    }
+    return result;
+  }
   onUnload(callback) {
     try {
+      this.setConnected(false);
     } catch (error) {
       this.log.error(`Error during unloading: ${error.message}`);
     } finally {
@@ -207,6 +262,17 @@ class TestDevices extends utils.Adapter {
       );
     }
     return deviceNamesWithMissingDefaultRoles;
+  }
+  setConnected(isConnected) {
+    void this.setState(
+      "info.connection",
+      isConnected,
+      true,
+      (error) => (
+        // analyse if the state could be set (because of permissions)
+        error ? this.log.error(`Can not update this._connected state: ${error}`) : this.log.debug(`connected set to ${isConnected}`)
+      )
+    );
   }
 }
 if (require.main !== module) {

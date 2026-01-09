@@ -58,7 +58,7 @@
     "watch:ts": "build-adapter ts --watch",
     "test:ts": "mocha --config test/mocharc.custom.json src/**/*.test.ts",
     "test:package": "mocha test/package --exit",
-    "test:integration": "mocha test/integration --exit",
+    "test:integration": "mocha --config test/mocharc.custom.json test/integration --timeout 30000 --exit",
     "test": "npm run test:ts && npm run test:package",
     "check": "tsc --noEmit",
     "lint": "eslint -c eslint.config.mjs .",
@@ -69,5 +69,8 @@
   "bugs": {
     "url": "https://github.com/OlliMartin/ioBroker.test-devices/issues"
   },
-  "readmeFilename": "README.md"
+  "readmeFilename": "README.md",
+  "mocha": {
+    "timeout": 30000
+  }
 }
