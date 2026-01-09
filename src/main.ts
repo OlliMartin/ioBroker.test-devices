@@ -12,11 +12,17 @@ type StateWithDeviceRef = ExternalDetectorState & {
 	deviceRef: DeviceDefinition;
 };
 
+type StateCreationJob = ExternalDetectorState & {
+	fqStateName: string;
+	commonType: ioBroker.CommonType;
+};
+
 const getDeviceMetadata: () => DeviceDefinition[] = () => {
 	const knownPatterns = ChannelDetector.getPatterns();
 
 	return Object.entries(knownPatterns).map(([k, v]) => ({
 		...v,
+		states: v.states.filter(s => !!s.defaultRole),
 		name: k,
 	}));
 };
@@ -51,6 +57,17 @@ class TestDevices extends utils.Adapter {
 		this.on('unload', this.onUnload.bind(this));
 	}
 
+	private static deviceFolderName: string = 'devices';
+	private static triggerFolderName: string = 'triggers';
+
+	public static GetDeviceFolderName(): string {
+		return TestDevices.deviceFolderName;
+	}
+
+	public static GetTriggerFolderName(): string {
+		return TestDevices.triggerFolderName;
+	}
+
 	private async onReady(): Promise<void> {
 		const allDevices = getDeviceMetadata();
 
@@ -63,12 +80,25 @@ class TestDevices extends utils.Adapter {
 			d => !deviceNamesWithMissingDefaultRoles.includes(d.name),
 		);
 
+		await this.createTopLevelFoldersAsync();
+
 		this.log.info(`Creating states for ${validDevices.length} devices`);
 
 		let createdStates = 0;
 		const startMs = Date.now();
 		for (const device of validDevices) {
-			createdStates += await this.createOrUpdateSingleDeviceAsync(device);
+			createdStates += await this.createOrUpdateSingleDeviceAsync(
+				device,
+				TestDevices.GetDeviceFolderName(),
+				'required',
+				s => !!s.required,
+			);
+			createdStates += await this.createOrUpdateSingleDeviceAsync(
+				device,
+				TestDevices.GetDeviceFolderName(),
+				'all',
+				_ => true,
+			);
 		}
 
 		this.log.info(
@@ -76,36 +106,78 @@ class TestDevices extends utils.Adapter {
 		);
 	}
 
-	private async createOrUpdateSingleDeviceAsync(device: DeviceDefinition): Promise<number> {
-		const deviceRoot = `${this.namespace}.${device.name}`;
-		await this.extendObject(deviceRoot, {
+	private async createTopLevelFoldersAsync(): Promise<void> {
+		const fqFolderName = `${this.namespace}.${TestDevices.GetDeviceFolderName()}`;
+		const fqTriggerName = `${this.namespace}.${TestDevices.GetTriggerFolderName()}`;
+
+		await Promise.allSettled([
+			this.extendObject(fqTriggerName, {
+				type: 'folder',
+				common: {
+					name: fqTriggerName,
+				},
+			}),
+			this.extendObject(fqFolderName, {
+				type: 'folder',
+				common: {
+					name: fqFolderName,
+				},
+			}),
+		]);
+	}
+
+	private async createOrUpdateSingleDeviceAsync(
+		device: DeviceDefinition,
+		folderName: string,
+		prefix: string,
+		stateFilter: (state: ExternalDetectorState) => boolean,
+	): Promise<number> {
+		const deviceType = `${this.namespace}.${folderName}.${prefix}`;
+		await this.extendObject(deviceType, {
 			type: 'device',
 			common: {
 				name: device.name,
 			},
 		});
 
-		let createdStates = 0;
-		for (const state of device.states.filter(s => s.required)) {
-			const stateName = `${deviceRoot}.${state.name}`;
-			const type = getStateType(state);
+		const deviceRoot = `${deviceType}.${device.name}`;
+		await this.extendObject(deviceType, {
+			type: 'channel',
+			common: {
+				name: deviceRoot,
+			},
+		});
 
-			await this.extendObject(stateName, {
-				type: 'state',
-				common: {
-					name: state.name,
-					type: type,
-					read: state.read ?? true,
-					write: state.write ?? false,
-					role: state.defaultRole,
-					unit: state.defaultUnit,
-				},
-			});
+		const mapStateToJob: (s: ExternalDetectorState) => StateCreationJob = s => {
+			return {
+				...s,
+				fqStateName: `${deviceRoot}.${s.name}`,
+				commonType: getStateType(s),
+			};
+		};
 
-			createdStates++;
-		}
+		// concurrency is limited by the device-iterator in onReady.
+		// semi-limited. Ok, I just don't want to use a queue, leave me alone.
+		const allPromises = device.states
+			.filter(stateFilter)
+			.map<StateCreationJob>(mapStateToJob)
+			.map(state =>
+				this.extendObject(state.fqStateName, {
+					type: 'state',
+					common: {
+						name: state.name,
+						type: state.commonType,
+						read: state.read ?? true,
+						write: state.write ?? false,
+						role: state.defaultRole,
+						unit: state.defaultUnit,
+					},
+				}),
+			);
 
-		return createdStates;
+		await Promise.allSettled(allPromises);
+
+		return allPromises.length;
 	}
 
 	private onUnload(callback: () => void): void {
@@ -153,10 +225,10 @@ class TestDevices extends utils.Adapter {
 
 		if (devicesWithDuplicateDefaultRoles.length > 0) {
 			const deviceNamesWithDuplicateDefaultRoles = devicesWithDuplicateDefaultRoles.map(d => d.name);
-			this.log.warn(
+			this.log.info(
 				`Found ${devicesWithDuplicateDefaultRoles.length} devices with duplicate default roles: [${deviceNamesWithDuplicateDefaultRoles.join(
 					', ',
-				)}]`,
+				)}] A state will be generated for each, ignoring the duplication.`,
 			);
 
 			for (const device of devicesWithDuplicateDefaultRoles) {
@@ -164,7 +236,7 @@ class TestDevices extends utils.Adapter {
 					.filter(s => isDuplicatedDefaultRole(s, device.states))
 					.map(s => `${s.name} -> ${s.defaultRole}`);
 
-				this.log.warn(`${device.name} -> Duplicate Roles: ${duplicatedDefaultRoles.join(', ')}`);
+				this.log.info(`\t${device.name} -> Duplicate Roles: ${duplicatedDefaultRoles.join(', ')}`);
 			}
 		}
 	}

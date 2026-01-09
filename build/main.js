@@ -27,6 +27,7 @@ const getDeviceMetadata = () => {
   const knownPatterns = import_type_detector.default.getPatterns();
   return Object.entries(knownPatterns).map(([k, v]) => ({
     ...v,
+    states: v.states.filter((s) => !!s.defaultRole),
     name: k
   }));
 };
@@ -53,6 +54,14 @@ class TestDevices extends utils.Adapter {
     this.on("ready", this.onReady.bind(this));
     this.on("unload", this.onUnload.bind(this));
   }
+  static deviceFolderName = "devices";
+  static triggerFolderName = "triggers";
+  static GetDeviceFolderName() {
+    return TestDevices.deviceFolderName;
+  }
+  static GetTriggerFolderName() {
+    return TestDevices.triggerFolderName;
+  }
   async onReady() {
     const allDevices = getDeviceMetadata();
     this.analyzeAllStates(allDevices);
@@ -61,43 +70,86 @@ class TestDevices extends utils.Adapter {
     const validDevices = allDevices.filter(
       (d) => !deviceNamesWithMissingDefaultRoles.includes(d.name)
     );
+    await this.createTopLevelFoldersAsync();
     this.log.info(`Creating states for ${validDevices.length} devices`);
     let createdStates = 0;
     const startMs = Date.now();
     for (const device of validDevices) {
-      createdStates += await this.createOrUpdateSingleDeviceAsync(device);
+      createdStates += await this.createOrUpdateSingleDeviceAsync(
+        device,
+        TestDevices.GetDeviceFolderName(),
+        "required",
+        (s) => !!s.required
+      );
+      createdStates += await this.createOrUpdateSingleDeviceAsync(
+        device,
+        TestDevices.GetDeviceFolderName(),
+        "all",
+        (_) => true
+      );
     }
     this.log.info(
       `Done. Created ${createdStates} states for ${validDevices.length} devices in ${Date.now() - startMs}ms.`
     );
   }
-  async createOrUpdateSingleDeviceAsync(device) {
-    var _a, _b;
-    const deviceRoot = `${this.namespace}.${device.name}`;
-    await this.extendObject(deviceRoot, {
+  async createTopLevelFoldersAsync() {
+    const fqFolderName = `${this.namespace}.${TestDevices.GetDeviceFolderName()}`;
+    const fqTriggerName = `${this.namespace}.${TestDevices.GetTriggerFolderName()}`;
+    await Promise.allSettled([
+      this.extendObject(fqTriggerName, {
+        type: "folder",
+        common: {
+          name: fqTriggerName
+        }
+      }),
+      this.extendObject(fqFolderName, {
+        type: "folder",
+        common: {
+          name: fqFolderName
+        }
+      })
+    ]);
+  }
+  async createOrUpdateSingleDeviceAsync(device, folderName, prefix, stateFilter) {
+    const deviceType = `${this.namespace}.${folderName}.${prefix}`;
+    await this.extendObject(deviceType, {
       type: "device",
       common: {
         name: device.name
       }
     });
-    let createdStates = 0;
-    for (const state of device.states.filter((s) => s.required)) {
-      const stateName = `${deviceRoot}.${state.name}`;
-      const type = getStateType(state);
-      await this.extendObject(stateName, {
-        type: "state",
-        common: {
-          name: state.name,
-          type,
-          read: (_a = state.read) != null ? _a : true,
-          write: (_b = state.write) != null ? _b : false,
-          role: state.defaultRole,
-          unit: state.defaultUnit
-        }
-      });
-      createdStates++;
-    }
-    return createdStates;
+    const deviceRoot = `${deviceType}.${device.name}`;
+    await this.extendObject(deviceType, {
+      type: "channel",
+      common: {
+        name: deviceRoot
+      }
+    });
+    const mapStateToJob = (s) => {
+      return {
+        ...s,
+        fqStateName: `${deviceRoot}.${s.name}`,
+        commonType: getStateType(s)
+      };
+    };
+    const allPromises = device.states.filter(stateFilter).map(mapStateToJob).map(
+      (state) => {
+        var _a, _b;
+        return this.extendObject(state.fqStateName, {
+          type: "state",
+          common: {
+            name: state.name,
+            type: state.commonType,
+            read: (_a = state.read) != null ? _a : true,
+            write: (_b = state.write) != null ? _b : false,
+            role: state.defaultRole,
+            unit: state.defaultUnit
+          }
+        });
+      }
+    );
+    await Promise.allSettled(allPromises);
+    return allPromises.length;
   }
   onUnload(callback) {
     try {
@@ -131,14 +183,14 @@ class TestDevices extends utils.Adapter {
     );
     if (devicesWithDuplicateDefaultRoles.length > 0) {
       const deviceNamesWithDuplicateDefaultRoles = devicesWithDuplicateDefaultRoles.map((d) => d.name);
-      this.log.warn(
+      this.log.info(
         `Found ${devicesWithDuplicateDefaultRoles.length} devices with duplicate default roles: [${deviceNamesWithDuplicateDefaultRoles.join(
           ", "
-        )}]`
+        )}] A state will be generated for each, ignoring the duplication.`
       );
       for (const device of devicesWithDuplicateDefaultRoles) {
         const duplicatedDefaultRoles = device.states.filter((s) => isDuplicatedDefaultRole(s, device.states)).map((s) => `${s.name} -> ${s.defaultRole}`);
-        this.log.warn(`${device.name} -> Duplicate Roles: ${duplicatedDefaultRoles.join(", ")}`);
+        this.log.info(`	${device.name} -> Duplicate Roles: ${duplicatedDefaultRoles.join(", ")}`);
       }
     }
   }
