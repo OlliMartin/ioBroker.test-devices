@@ -16,6 +16,7 @@ const sendToAsync = (harness, instance, command, message) => {
 };
 
 const deviceTypeBlacklist = ['chart'];
+const relevantDeviceTypes = Object.keys(ChannelDetector.getPatterns()).filter(k => !deviceTypeBlacklist.includes(k));
 
 tests.integration(projectRoot, {
 	allowedExitCodes: [11, 15],
@@ -31,13 +32,22 @@ tests.integration(projectRoot, {
 				await harness.enableSendTo();
 			});
 
-			for (const deviceType of Object.keys(ChannelDetector.getPatterns()).filter(
-				k => !deviceTypeBlacklist.includes(k),
-			)) {
+			for (const deviceType of relevantDeviceTypes) {
 				it(`Should create discoverable device with type ${deviceType}`, async () => {
 					const response = await sendToAsync(harness, 'test-devices.0', 'VERIFY_DEVICE_TYPE', deviceType);
 					assert.equal(response, 'SUCCESS');
 				});
+			}
+
+			for (const generationType of ['required', 'all']) {
+				for (const deviceType of relevantDeviceTypes) {
+					it(`Should generate a button for device ${generationType}.${deviceType}`, async () => {
+						const expectedId = `test-devices.0.triggers.${generationType}.${deviceType}`;
+						const state = await harness.states.getState(expectedId);
+
+						assert.notEqual(state, null, `Expected state ${expectedId} to exist, but it does not.`);
+					});
+				}
 			}
 		});
 	},
