@@ -59,6 +59,7 @@ class TestDevices extends utils.Adapter {
   }
   static deviceFolderName = "devices";
   static triggerFolderName = "triggers";
+  stateNames = [];
   static GetDeviceFolderName() {
     return TestDevices.deviceFolderName;
   }
@@ -74,6 +75,47 @@ class TestDevices extends utils.Adapter {
       (d) => !deviceNamesWithMissingDefaultRoles.includes(d.name)
     );
     await this.createTopLevelFoldersAsync();
+    await this.createAllDevicesAsync(validDevices);
+    await this.createDeviceChangeTriggersAsync(validDevices);
+    this.log.info(`Stored state count: ${this.stateNames.length}.`);
+    this.setConnected(true);
+  }
+  validCommands = ["VERIFY_DEVICE_TYPE", "GET_DEVICE_STATES"];
+  async onMessage(message) {
+    if (!this.validCommands.includes(message.command) || !message.callback) {
+      this.log.info(`Dropping unknown command '${message.command}'.`);
+      this.sendTo(message.from, message.command, "INVALID_COMMAND", message.callback);
+      return;
+    }
+    if (message.command === "VERIFY_DEVICE_TYPE") {
+      const deviceType = message.message;
+      this.log.debug(`Verifying device type match for ${deviceType}.`);
+      const result = await this.verifyCreatedDeviceAsync(deviceType);
+      this.sendTo(message.from, message.command, result ? "SUCCESS" : "FAIL", message.callback);
+    } else if (message.command === "GET_DEVICE_STATES") {
+      this.log.debug("Collecting device states.");
+      this.sendTo(message.from, message.command, this.stateNames, message.callback);
+    }
+  }
+  async createTopLevelFoldersAsync() {
+    const fqFolderName = `${this.namespace}.${TestDevices.GetDeviceFolderName()}`;
+    const fqTriggerName = `${this.namespace}.${TestDevices.GetTriggerFolderName()}`;
+    await Promise.allSettled([
+      this.extendObject(fqTriggerName, {
+        type: "folder",
+        common: {
+          name: fqTriggerName
+        }
+      }),
+      this.extendObject(fqFolderName, {
+        type: "folder",
+        common: {
+          name: fqFolderName
+        }
+      })
+    ]);
+  }
+  async createAllDevicesAsync(validDevices) {
     this.log.info(`Creating states for ${validDevices.length} devices`);
     let createdStates = 0;
     const startMs = Date.now();
@@ -94,34 +136,9 @@ class TestDevices extends utils.Adapter {
     this.log.info(
       `Done. Created ${createdStates} states for ${validDevices.length} devices in ${Date.now() - startMs}ms.`
     );
-    this.setConnected(true);
   }
-  async onMessage(message) {
-    if (message.command != "VERIFY_DEVICE_TYPE" || !message.callback) {
-      return;
-    }
-    const deviceType = message.message;
-    this.log.debug(`Verifying device type match for ${deviceType}.`);
-    const result = await this.verifyCreatedDevice(deviceType);
-    this.sendTo(message.from, message.command, result ? "SUCCESS" : "FAIL", message.callback);
-  }
-  async createTopLevelFoldersAsync() {
-    const fqFolderName = `${this.namespace}.${TestDevices.GetDeviceFolderName()}`;
-    const fqTriggerName = `${this.namespace}.${TestDevices.GetTriggerFolderName()}`;
-    await Promise.allSettled([
-      this.extendObject(fqTriggerName, {
-        type: "folder",
-        common: {
-          name: fqTriggerName
-        }
-      }),
-      this.extendObject(fqFolderName, {
-        type: "folder",
-        common: {
-          name: fqFolderName
-        }
-      })
-    ]);
+  trackCreatedState(fqStateName) {
+    this.stateNames.push(fqStateName);
   }
   async createOrUpdateSingleDeviceAsync(device, folderName, prefix, stateFilter) {
     const deviceType = `${this.namespace}.${folderName}.${prefix}`;
@@ -161,8 +178,40 @@ class TestDevices extends utils.Adapter {
         });
       }
     );
-    await Promise.allSettled(allPromises);
+    const created = await Promise.all(allPromises);
+    created.forEach(({ id }) => this.trackCreatedState(id));
     return allPromises.length;
+  }
+  async createDeviceChangeTriggersAsync(validDevices) {
+    this.log.info(`Creating triggers for ${validDevices.length} devices`);
+    const startMs = Date.now();
+    const triggerFolder = `${this.namespace}.${TestDevices.GetTriggerFolderName()}`;
+    for (const generationType of ["required", "all"]) {
+      await this.extendObject(`${triggerFolder}.${generationType}`, {
+        type: "folder",
+        common: {
+          name: generationType
+        }
+      });
+    }
+    for (const device of validDevices) {
+      await this.createOrUpdateSingleDeviceTriggerAsync(device, TestDevices.GetTriggerFolderName(), "required");
+      await this.createOrUpdateSingleDeviceTriggerAsync(device, TestDevices.GetTriggerFolderName(), "all");
+    }
+    this.log.info(`Done. Created ${validDevices.length} device triggers in ${Date.now() - startMs}ms.`);
+  }
+  async createOrUpdateSingleDeviceTriggerAsync(device, folderName, prefix) {
+    const deviceType = `${this.namespace}.${folderName}.${prefix}.${device.name}`;
+    await this.extendObject(deviceType, {
+      type: "state",
+      common: {
+        name: device.name,
+        type: "boolean",
+        role: "button",
+        read: false,
+        write: true
+      }
+    });
   }
   objectsLastRead = null;
   objectCache = null;
@@ -177,7 +226,7 @@ class TestDevices extends utils.Adapter {
     );
     return this.objectCache;
   }
-  async verifyCreatedDevice(deviceType) {
+  async verifyCreatedDeviceAsync(deviceType) {
     const objects = await this.getObjectsCachedAsync();
     const deviceGenerationTypes = ["all", "required"];
     let result = true;
