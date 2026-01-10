@@ -58,7 +58,7 @@ const getNumberRangeGenerator = (min, max, decimals) => {
 const NumberRange = (min, max, decimals) => {
   return {
     gen: getNumberRangeGenerator(min, max, decimals),
-    description: `Num[${min}-${max}]`
+    description: `Num[${min}..${max}|P${decimals}]`
   };
 };
 const getRandomNumberGenerator = () => {

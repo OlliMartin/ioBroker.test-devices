@@ -63,7 +63,7 @@ describe('createDesiredStateDefinitions', () => {
 		let markdown = `
 # Important
 
-Note: This file should not be updated manually. It is auto-generated.
+Note: This file should not be updated manually. It is auto-generated and to be consumed by AI (agents).
 For brevity, the list omits all \`boolean\` states.
 
 The following table lists the state mappings defined in [value-generator.defs.ts](../src/value-generator.defs.ts), 
@@ -86,7 +86,7 @@ The value generators follow this structure in their typescript definition:
 \`\`\`
 
 There are a few wrappers available:
-- \`NumberRange($min, $max, $decimalPlaces)\` - Generates the next number randomly in the provided range
+- \`NumberRange($min, $max, $decimalPlaces)\` - Generates the next number randomly in the provided range. In a description this wrapper has the form: Num[$min..$max|P$decimalPlaces]
 - \`RandomNumber\` - This wrapper indicates that a state is not yet properly handled and should be changed
 - \`Toggle\` - This is the default value generator for \`boolean\` states. It toggles the value 
 
@@ -94,7 +94,7 @@ There are a few wrappers available:
 
 | Device | State Name | Role | Unit | Value Type | Remark/Description |
 | ------ | ---------- | ---- | ---- | ---------- | ------------------ |
-		`;
+`;
 
 		for (const vgDef of trackedValueGenerators
 			.filter(vgDef => vgDef.stateDef.commonType !== 'boolean')
