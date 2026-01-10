@@ -17,7 +17,28 @@ type StateCreationJob = ExternalDetectorState & {
 	commonType: ioBroker.CommonType;
 };
 
+// Not used for now; May be handy in the future.
+interface DeviceFilterContext {
+	device: DeviceDefinition;
+}
+
 type DeviceStatesGenerationType = 'all' | 'required';
+
+// Heck, I can't get typescript to enfoce that the array here consists of all properties of the type.
+// If a new type is introduced one line above, it must be added here too :/
+const generationTypes: GenerationTypes = ['all', 'required'];
+
+type GenerationTypes = readonly DeviceStatesGenerationType[];
+
+type DeviceFilterType = Record<
+	DeviceStatesGenerationType,
+	(ctx: DeviceFilterContext, state: ExternalDetectorState) => boolean
+>;
+
+const deviceFilter: DeviceFilterType = {
+	all: (_1, _2) => true,
+	required: (_, s) => !!s.required,
+};
 
 const detector: ChannelDetector = new ChannelDetector();
 
@@ -120,6 +141,10 @@ class TestDevices extends utils.Adapter {
 		} else if (message.command === 'GET_DEVICE_STATES') {
 			this.log.debug('Collecting device states.');
 			this.sendTo(message.from, message.command, this.stateNames, message.callback);
+		} else if (message.command === 'SIMULATE_SINGLE_DEVICE_CHANGE') {
+			this.log.debug('Collecting device states.');
+		} else if (message.command === 'SIMULATE_DEVICE_CHANGES') {
+			this.log.debug('Collecting device states.');
 		}
 	}
 
@@ -148,19 +173,15 @@ class TestDevices extends utils.Adapter {
 
 		let createdStates = 0;
 		const startMs = Date.now();
-		for (const device of validDevices) {
-			createdStates += await this.createOrUpdateSingleDeviceAsync(
-				device,
-				TestDevices.GetDeviceFolderName(),
-				'required',
-				s => !!s.required,
-			);
-			createdStates += await this.createOrUpdateSingleDeviceAsync(
-				device,
-				TestDevices.GetDeviceFolderName(),
-				'all',
-				_ => true,
-			);
+		for (const generationType of generationTypes) {
+			for (const device of validDevices) {
+				createdStates += await this.createOrUpdateSingleDeviceAsync(
+					device,
+					TestDevices.GetDeviceFolderName(),
+					generationType,
+					deviceFilter[generationType],
+				);
+			}
 		}
 
 		this.log.info(
@@ -176,7 +197,7 @@ class TestDevices extends utils.Adapter {
 		device: DeviceDefinition,
 		folderName: string,
 		prefix: DeviceStatesGenerationType,
-		stateFilter: (state: ExternalDetectorState) => boolean,
+		stateFilter: (ctx: DeviceFilterContext, state: ExternalDetectorState) => boolean,
 	): Promise<number> {
 		const deviceType = `${this.namespace}.${folderName}.${prefix}`;
 		await this.extendObject(deviceType, {
@@ -205,7 +226,7 @@ class TestDevices extends utils.Adapter {
 		// concurrency is limited by the device-iterator in onReady.
 		// semi-limited. Ok, I just don't want to use a queue, leave me alone.
 		const allPromises = device.states
-			.filter(stateFilter)
+			.filter(s => stateFilter({ device: device }, s))
 			.map<StateCreationJob>(mapStateToJob)
 			.map(state =>
 				this.extendObject(state.fqStateName, {
@@ -233,7 +254,7 @@ class TestDevices extends utils.Adapter {
 		const startMs = Date.now();
 		const triggerFolder = `${this.namespace}.${TestDevices.GetTriggerFolderName()}`;
 
-		for (const generationType of ['required', 'all']) {
+		for (const generationType of generationTypes) {
 			await this.extendObject(`${triggerFolder}.${generationType}`, {
 				type: 'folder',
 				common: {
@@ -242,9 +263,14 @@ class TestDevices extends utils.Adapter {
 			});
 		}
 
-		for (const device of validDevices) {
-			await this.createOrUpdateSingleDeviceTriggerAsync(device, TestDevices.GetTriggerFolderName(), 'required');
-			await this.createOrUpdateSingleDeviceTriggerAsync(device, TestDevices.GetTriggerFolderName(), 'all');
+		for (const generationType of generationTypes) {
+			for (const device of validDevices) {
+				await this.createOrUpdateSingleDeviceTriggerAsync(
+					device,
+					TestDevices.GetTriggerFolderName(),
+					generationType,
+				);
+			}
 		}
 
 		this.log.info(`Done. Created ${validDevices.length} device triggers in ${Date.now() - startMs}ms.`);
