@@ -58,7 +58,7 @@ export const commonValueGenerators: ioBroker.ValueGeneratorDefinition[] = [
 		d: ['rgb', 'rgbwSingle'],
 		s: ['TEMPERATURE'],
 		...NumberRange(0, 1000, 0),
-	} /* I'm guessing Kelvin? What's the UOM here? */,
+	},
 
 	{
 		u: UNIT__CUSTOM,
@@ -75,6 +75,7 @@ export const commonValueGenerators: ioBroker.ValueGeneratorDefinition[] = [
 		t: 'number',
 		d: ['airCondition'],
 		s: ['CURRENT'],
+		// The AI thought it's important the air conditioner can draw more current. ¯\_(ツ)_/¯
 		...NumberRange(100, 2000, 0),
 	},
 	{
@@ -102,14 +103,14 @@ export const commonValueGenerators: ioBroker.ValueGeneratorDefinition[] = [
 
 	// GPS/Location states
 	{
-		u: 'm',
+		u: UNIT__CUSTOM,
 		t: 'number',
 		d: ['location', 'locationOne'],
 		s: ['ACCURACY'],
 		...NumberRange(1, 50, 0),
 	},
 	{
-		u: 'm',
+		u: UNIT__CUSTOM,
 		t: 'number',
 		d: ['location', 'locationOne'],
 		s: ['ELEVATION'],

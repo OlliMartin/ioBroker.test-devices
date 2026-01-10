@@ -88,6 +88,7 @@ const commonValueGenerators = [
     t: "number",
     d: ["airCondition"],
     s: ["CURRENT"],
+    // The AI thought it's important the air conditioner can draw more current. ¯\_(ツ)_/¯
     ...(0, import_value_generators.NumberRange)(100, 2e3, 0)
   },
   {
@@ -113,14 +114,14 @@ const commonValueGenerators = [
   },
   // GPS/Location states
   {
-    u: "m",
+    u: import_constants.UNIT__CUSTOM,
     t: "number",
     d: ["location", "locationOne"],
     s: ["ACCURACY"],
     ...(0, import_value_generators.NumberRange)(1, 50, 0)
   },
   {
-    u: "m",
+    u: import_constants.UNIT__CUSTOM,
     t: "number",
     d: ["location", "locationOne"],
     s: ["ELEVATION"],

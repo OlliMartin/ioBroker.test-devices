@@ -158,18 +158,18 @@ There are a few wrappers available:
 | light | FREQUENCY | value.frequency | Hz | number | Num[5000..15000#P0] |
 | light | VOLTAGE | value.voltage | V | number | Num[80..150#P1] |
 | light | WORKING | indicator.working |  | string | 'YES' or 'NO' |
-| location | ACCURACY | value.gps.accuracy |  | number | TODO |
+| location | ACCURACY | value.gps.accuracy |  | number | Num[1..50#P0] |
 | location | BATTERY | value.battery | % | number | Num[0..100#P2] |
-| location | ELEVATION | value.gps.elevation |  | number | TODO |
+| location | ELEVATION | value.gps.elevation |  | number | Num[-100..4000#P0] |
 | location | ERROR | indicator.error |  | string | 'YES' or 'NO' |
 | location | LATITUDE | value.gps.latitude | ° | number | Num[-90..90#P5] |
 | location | LATITUDE | value.gps.latitude | ° | number | Num[-90..90#P5] |
 | location | LONGITUDE | value.gps.longitude | ° | number | Num[-180..180#P5] |
 | location | LONGITUDE | value.gps.longitude | ° | number | Num[-180..180#P5] |
 | location | RADIUS | value.gps.radius |  | number | TODO |
-| locationOne | ACCURACY | value.gps.accuracy |  | number | TODO |
+| locationOne | ACCURACY | value.gps.accuracy |  | number | Num[1..50#P0] |
 | locationOne | BATTERY | value.battery | % | number | Num[0..100#P2] |
-| locationOne | ELEVATION | value.gps.elevation |  | number | TODO |
+| locationOne | ELEVATION | value.gps.elevation |  | number | Num[-100..4000#P0] |
 | locationOne | ERROR | indicator.error |  | string | 'YES' or 'NO' |
 | locationOne | GPS | value.gps |  | string | TODO |
 | locationOne | GPS | value.gps |  | string | TODO |
