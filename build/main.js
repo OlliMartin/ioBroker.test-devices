@@ -23,6 +23,11 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 ));
 var utils = __toESM(require("@iobroker/adapter-core"));
 var import_type_detector = __toESM(require("@iobroker/type-detector"));
+const generationTypes = ["all", "required"];
+const deviceFilter = {
+  all: (_1, _2) => true,
+  required: (_, s) => !!s.required
+};
 const detector = new import_type_detector.default();
 const deviceTypeBlacklist = ["chart"];
 const getDeviceMetadata = () => {
@@ -37,6 +42,15 @@ const getStateType = (state, fallback) => {
   var _a, _b;
   return Array.isArray(state.type) ? state.type[0] : (_b = (_a = state.type) != null ? _a : fallback) != null ? _b : "string";
 };
+const crossProduct = (as, bs) => {
+  const result = [];
+  for (const a of as) {
+    for (const b of bs) {
+      result.push([a, b]);
+    }
+  }
+  return result;
+};
 const printMissingDefaultRoleMarkdown = (states) => {
   const sortedStates = [...states].sort((a, b) => a.name.localeCompare(b.name)).sort((a, b) => a.deviceRef.name.localeCompare(b.deviceRef.name));
   let output = "| Device | Name | Type | Role Regex |\n";
@@ -48,6 +62,11 @@ const printMissingDefaultRoleMarkdown = (states) => {
   console.log(output);
 };
 class TestDevices extends utils.Adapter {
+  static deviceFolderName = "devices";
+  static triggerFolderName = "triggers";
+  validDevices;
+  stateLookup;
+  stateNames = [];
   constructor(options = {}) {
     super({
       ...options,
@@ -56,10 +75,35 @@ class TestDevices extends utils.Adapter {
     this.on("message", this.onMessage.bind(this));
     this.on("ready", this.onReady.bind(this));
     this.on("unload", this.onUnload.bind(this));
+    const startMs = Date.now();
+    const allDevices = getDeviceMetadata();
+    this.analyzeAllStates(allDevices);
+    const deviceNamesWithMissingDefaultRoles = this.getDeviceNamesMissingDefaultRoles(allDevices);
+    this.analyzeDuplicateDefaultRoles(allDevices);
+    this.validDevices = allDevices.filter((d) => !deviceNamesWithMissingDefaultRoles.includes(d.name));
+    this.stateLookup = this.createDesiredStateDefinitions(this.validDevices);
+    this.stateNames = Object.keys(this.stateLookup);
+    this.logLater(`Discovering desired states took ${Date.now() - startMs}ms.`);
   }
-  static deviceFolderName = "devices";
-  static triggerFolderName = "triggers";
-  stateNames = [];
+  createDesiredStateDefinitions(validDevices) {
+    const getDeviceType = (genType) => `${this.namespace}.${TestDevices.GetDeviceFolderName()}.${genType}`;
+    const getDeviceRoot = (genType, device) => `${getDeviceType(genType)}.${device.name}`;
+    const getFilterContext = (device) => {
+      return { device };
+    };
+    const stateCacheMemory = crossProduct(generationTypes, validDevices).map((arr) => ({
+      generationType: arr[0],
+      device: arr[1]
+    })).map((m) => ({
+      ...m,
+      context: getFilterContext(m.device),
+      deviceType: getDeviceType(m.generationType),
+      deviceRoot: getDeviceRoot(m.generationType, m.device)
+    })).map(
+      (m) => m.device.states.filter((s) => deviceFilter[m.generationType](m.context, s)).map((s) => ({ ...m, state: s, stateFqn: `${m.deviceRoot}.${s.name}`, commonType: getStateType(s) }))
+    ).reduce((prev, curr) => [...prev, ...curr], []);
+    return stateCacheMemory.reduce((prev, curr) => ({ ...prev, [curr.stateFqn]: curr }), {});
+  }
   static GetDeviceFolderName() {
     return TestDevices.deviceFolderName;
   }
@@ -67,17 +111,26 @@ class TestDevices extends utils.Adapter {
     return TestDevices.triggerFolderName;
   }
   async onReady() {
+    for (const msg of this.logMessages) {
+      this.log.info(msg);
+    }
+    this.logMessages = [];
     const startMs = Date.now();
-    const allDevices = getDeviceMetadata();
-    this.analyzeAllStates(allDevices);
-    const deviceNamesWithMissingDefaultRoles = this.getDeviceNamesMissingDefaultRoles(allDevices);
-    this.analyzeDuplicateDefaultRoles(allDevices);
-    const validDevices = allDevices.filter(
-      (d) => !deviceNamesWithMissingDefaultRoles.includes(d.name)
-    );
+    const objectCache = await this.getObjectsCachedAsync();
     await this.createTopLevelFoldersAsync();
-    await this.createAllDevicesAsync(validDevices);
-    await this.createDeviceChangeTriggersAsync(validDevices);
+    await this.createDeviceChangeTriggersAsync(this.validDevices);
+    await this.createMetaStatesForDevicesAsync(this.validDevices);
+    const foundInDb = Object.keys(objectCache);
+    if (this.stateNames.every((requestedDeviceStateName) => foundInDb.includes(requestedDeviceStateName))) {
+      this.log.debug(
+        `Device states unchanged from last start. Want: ${this.stateNames.length} Have: ${foundInDb.length}. Skipping creation.`
+      );
+    } else {
+      this.log.debug(
+        `Actual device states deviate from desired state. Want: ${this.stateNames.length} Have: ${foundInDb.length}. Recreating all.`
+      );
+      await this.createAllDevicesAsync(this.validDevices);
+    }
     this.log.info(`Stored state count: ${this.stateNames.length}.`);
     this.setConnected(true);
     this.log.info(`Start-up finished within ${Date.now() - startMs}ms.`);
@@ -91,12 +144,15 @@ class TestDevices extends utils.Adapter {
     }
     if (message.command === "VERIFY_DEVICE_TYPE") {
       const deviceType = message.message;
-      this.log.debug(`Verifying device type match for ${deviceType}.`);
       const result = await this.verifyCreatedDeviceAsync(deviceType);
       this.sendTo(message.from, message.command, result ? "SUCCESS" : "FAIL", message.callback);
     } else if (message.command === "GET_DEVICE_STATES") {
       this.log.debug("Collecting device states.");
       this.sendTo(message.from, message.command, this.stateNames, message.callback);
+    } else if (message.command === "SIMULATE_SINGLE_DEVICE_CHANGE") {
+      this.log.debug("Collecting device states.");
+    } else if (message.command === "SIMULATE_DEVICE_CHANGES") {
+      this.log.debug("Collecting device states.");
     }
   }
   async createTopLevelFoldersAsync() {
@@ -118,32 +174,39 @@ class TestDevices extends utils.Adapter {
     ]);
   }
   async createAllDevicesAsync(validDevices) {
-    this.log.info(`Creating states for ${validDevices.length} devices`);
-    let createdStates = 0;
     const startMs = Date.now();
-    for (const device of validDevices) {
-      createdStates += await this.createOrUpdateSingleDeviceAsync(
-        device,
-        TestDevices.GetDeviceFolderName(),
-        "required",
-        (s) => !!s.required
-      );
-      createdStates += await this.createOrUpdateSingleDeviceAsync(
-        device,
-        TestDevices.GetDeviceFolderName(),
-        "all",
-        (_) => true
-      );
-    }
+    this.log.debug(`Creating ${this.stateNames.length} states for ${validDevices.length} devices`);
+    const sem = new Semaphore(16);
+    const allPromises = Object.values(this.stateLookup).map(
+      (stateDef) => sem.with(
+        () => {
+          var _a, _b;
+          return this.extendObject(stateDef.stateFqn, {
+            type: "state",
+            common: {
+              name: stateDef.state.name,
+              type: stateDef.commonType,
+              read: (_a = stateDef.state.read) != null ? _a : true,
+              write: (_b = stateDef.state.write) != null ? _b : false,
+              role: stateDef.state.defaultRole,
+              unit: stateDef.state.defaultUnit
+            }
+          });
+        }
+      )
+    );
+    await Promise.all(allPromises);
     this.log.info(
-      `Done. Created ${createdStates} states for ${validDevices.length} devices in ${Date.now() - startMs}ms.`
+      `Created ${this.stateNames.length} states for ${validDevices.length} devices in ${Date.now() - startMs}ms.`
     );
   }
-  trackCreatedState(fqStateName) {
-    this.stateNames.push(fqStateName);
+  async createMetaStatesForDevicesAsync(devices) {
+    await Promise.all(
+      crossProduct(generationTypes, devices).map((d) => this.createMetaStatesForDeviceAsync(d[1], d[0]))
+    );
   }
-  async createOrUpdateSingleDeviceAsync(device, folderName, prefix, stateFilter) {
-    const deviceType = `${this.namespace}.${folderName}.${prefix}`;
+  async createMetaStatesForDeviceAsync(device, prefix) {
+    const deviceType = `${this.namespace}.${TestDevices.GetDeviceFolderName()}.${prefix}`;
     await this.extendObject(deviceType, {
       type: "device",
       common: {
@@ -157,38 +220,12 @@ class TestDevices extends utils.Adapter {
         name: device.name
       }
     });
-    const mapStateToJob = (s) => {
-      return {
-        ...s,
-        fqStateName: `${deviceRoot}.${s.name}`,
-        commonType: getStateType(s)
-      };
-    };
-    const allPromises = device.states.filter(stateFilter).map(mapStateToJob).map(
-      (state) => {
-        var _a, _b;
-        return this.extendObject(state.fqStateName, {
-          type: "state",
-          common: {
-            name: state.name,
-            type: state.commonType,
-            read: (_a = state.read) != null ? _a : true,
-            write: (_b = state.write) != null ? _b : false,
-            role: state.defaultRole,
-            unit: state.defaultUnit
-          }
-        });
-      }
-    );
-    const created = await Promise.all(allPromises);
-    created.forEach(({ id }) => this.trackCreatedState(id));
-    return allPromises.length;
   }
   async createDeviceChangeTriggersAsync(validDevices) {
-    this.log.info(`Creating triggers for ${validDevices.length} devices`);
+    this.log.debug(`Creating triggers for ${validDevices.length} devices`);
     const startMs = Date.now();
     const triggerFolder = `${this.namespace}.${TestDevices.GetTriggerFolderName()}`;
-    for (const generationType of ["required", "all"]) {
+    for (const generationType of generationTypes) {
       await this.extendObject(`${triggerFolder}.${generationType}`, {
         type: "folder",
         common: {
@@ -196,9 +233,14 @@ class TestDevices extends utils.Adapter {
         }
       });
     }
-    for (const device of validDevices) {
-      await this.createOrUpdateSingleDeviceTriggerAsync(device, TestDevices.GetTriggerFolderName(), "required");
-      await this.createOrUpdateSingleDeviceTriggerAsync(device, TestDevices.GetTriggerFolderName(), "all");
+    for (const generationType of generationTypes) {
+      for (const device of validDevices) {
+        await this.createOrUpdateSingleDeviceTriggerAsync(
+          device,
+          TestDevices.GetTriggerFolderName(),
+          generationType
+        );
+      }
     }
     this.log.info(`Done. Created ${validDevices.length} device triggers in ${Date.now() - startMs}ms.`);
   }
@@ -265,16 +307,20 @@ class TestDevices extends utils.Adapter {
       callback();
     }
   }
+  logMessages = [];
+  logLater(message) {
+    this.logMessages.push(message);
+  }
   analyzeAllStates(allDevices) {
     const mapState = (device, state) => ({ ...state, deviceRef: device });
     const allStates = allDevices.reduce(
       (prev, curr) => [...prev, ...curr.states.map((s) => mapState(curr, s))],
       []
     );
-    this.log.info(`State count total: ${allStates.length}`);
+    this.logLater(`State count total: ${allStates.length}`);
     const statesWithoutDefaultRole = allStates.filter((s) => !s.defaultRole);
     if (statesWithoutDefaultRole.length > 0) {
-      this.log.info(
+      this.logLater(
         `States without default role: ${statesWithoutDefaultRole.length} - [${statesWithoutDefaultRole.map((s) => s.name).join(", ")}]`
       );
       printMissingDefaultRoleMarkdown(statesWithoutDefaultRole);
@@ -289,14 +335,14 @@ class TestDevices extends utils.Adapter {
     );
     if (devicesWithDuplicateDefaultRoles.length > 0) {
       const deviceNamesWithDuplicateDefaultRoles = devicesWithDuplicateDefaultRoles.map((d) => d.name);
-      this.log.info(
+      this.logLater(
         `Found ${devicesWithDuplicateDefaultRoles.length} devices with duplicate default roles: [${deviceNamesWithDuplicateDefaultRoles.join(
           ", "
         )}] A state will be generated for each, ignoring the duplication.`
       );
       for (const device of devicesWithDuplicateDefaultRoles) {
         const duplicatedDefaultRoles = device.states.filter((s) => isDuplicatedDefaultRole(s, device.states)).map((s) => `${s.name} -> ${s.defaultRole}`);
-        this.log.info(`	${device.name} -> Duplicate Roles: ${duplicatedDefaultRoles.join(", ")}`);
+        this.logLater(`	${device.name} -> Duplicate Roles: ${duplicatedDefaultRoles.join(", ")}`);
       }
     }
   }
@@ -306,7 +352,7 @@ class TestDevices extends utils.Adapter {
     );
     const deviceNamesWithMissingDefaultRoles = devicesWithMissingDefaultRoles.map((d) => d.name);
     if (devicesWithMissingDefaultRoles.length > 0) {
-      this.log.warn(
+      this.logLater(
         `Found ${devicesWithMissingDefaultRoles.length} devices with missing default roles: [${deviceNamesWithMissingDefaultRoles.join(
           ", "
         )}] These will be skipped.`
@@ -324,6 +370,39 @@ class TestDevices extends utils.Adapter {
         error ? this.log.error(`Can not update this._connected state: ${error}`) : this.log.debug(`connected set to ${isConnected}`)
       )
     );
+  }
+}
+class Semaphore {
+  count;
+  queue = [];
+  constructor(maxConcurrency) {
+    this.count = maxConcurrency;
+  }
+  async acquire() {
+    if (this.count > 0) {
+      this.count--;
+      return;
+    }
+    return new Promise((resolve) => {
+      this.queue.push(resolve);
+    });
+  }
+  release() {
+    if (this.queue.length > 0) {
+      const next = this.queue.shift();
+      next();
+    } else {
+      this.count++;
+    }
+  }
+  // Convenience method
+  async with(fn) {
+    await this.acquire();
+    try {
+      return await fn();
+    } finally {
+      this.release();
+    }
   }
 }
 if (require.main !== module) {
