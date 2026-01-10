@@ -34,16 +34,16 @@ There are a few wrappers available:
 | ------ | ---------- | ---- | ---- | ---------- | ------------------ |
 | airCondition | ACTUAL | value.temperature | °C | number | Num[-5..35#P1] |
 | airCondition | CONSUMPTION | value.power.consumption | Wh | number | Num[20..500#P0] |
-| airCondition | CURRENT | value.current | mA | number | TODO |
+| airCondition | CURRENT | value.current | mA | number | Num[100..2000#P0] |
 | airCondition | ELECTRIC_POWER | value.power | W | number | Num[20..500#P0] |
 | airCondition | ERROR | indicator.error |  | string | 'YES' or 'NO' |
 | airCondition | FREQUENCY | value.frequency | Hz | number | Num[5000..15000#P0] |
 | airCondition | HUMIDITY | value.humidity | % | number | Num[0..100#P2] |
-| airCondition | MODE | level.mode.airconditioner |  | number | TODO |
-| airCondition | MODE | level.mode.airconditioner |  | number | TODO |
+| airCondition | MODE | level.mode.airconditioner |  | number | Num[0..4#P0] |
+| airCondition | MODE | level.mode.airconditioner |  | number | Num[0..4#P0] |
 | airCondition | SET | level.temperature | °C | number | Num[-5..35#P1] |
 | airCondition | SET | level.temperature | °C | number | Num[-5..35#P1] |
-| airCondition | SPEED | level.mode.fan |  | number | TODO |
+| airCondition | SPEED | level.mode.fan |  | number | Num[1..100#P0] |
 | airCondition | VOLTAGE | value.voltage | V | number | Num[80..150#P1] |
 | blindButtons | BATTERY | value.battery | % | number | Num[0..100#P2] |
 | blindButtons | ERROR | indicator.error |  | string | 'YES' or 'NO' |
@@ -71,37 +71,37 @@ There are a few wrappers available:
 | cie | CIE | level.color.cie |  | string | TODO |
 | cie | CIE | level.color.cie |  | string | TODO |
 | cie | CONSUMPTION | value.power.consumption | Wh | number | Num[20..500#P0] |
-| cie | CURRENT | value.current | mA | number | TODO |
+| cie | CURRENT | value.current | mA | number | Num[100..500#P0] |
 | cie | DIMMER | level.dimmer | % | number | Num[0..100#P2] |
 | cie | ELECTRIC_POWER | value.power | W | number | Num[20..500#P0] |
 | cie | ERROR | indicator.error |  | string | 'YES' or 'NO' |
 | cie | FREQUENCY | value.frequency | Hz | number | Num[5000..15000#P0] |
-| cie | TEMPERATURE | level.color.temperature | °K | number | TODO |
-| cie | TRANSITION_TIME | time.span | ms | number | TODO |
+| cie | TEMPERATURE | level.color.temperature | °K | number | Num[2000..6500#P0] |
+| cie | TRANSITION_TIME | time.span | ms | number | Num[0..10000#P0] |
 | cie | VOLTAGE | value.voltage | V | number | Num[80..150#P1] |
 | cie | WORKING | indicator.working |  | string | 'YES' or 'NO' |
 | ct | BATTERY | value.battery | % | number | Num[0..100#P2] |
 | ct | CONSUMPTION | value.power.consumption | Wh | number | Num[20..500#P0] |
-| ct | CURRENT | value.current | mA | number | TODO |
+| ct | CURRENT | value.current | mA | number | Num[100..500#P0] |
 | ct | DIMMER | level.dimmer | % | number | Num[0..100#P2] |
 | ct | ELECTRIC_POWER | value.power | W | number | Num[20..500#P0] |
 | ct | ERROR | indicator.error |  | string | 'YES' or 'NO' |
 | ct | FREQUENCY | value.frequency | Hz | number | Num[5000..15000#P0] |
-| ct | TEMPERATURE | level.color.temperature | °K | number | TODO |
-| ct | TEMPERATURE | level.color.temperature | °K | number | TODO |
-| ct | TRANSITION_TIME | time.span | ms | number | TODO |
+| ct | TEMPERATURE | level.color.temperature | °K | number | Num[2000..6500#P0] |
+| ct | TEMPERATURE | level.color.temperature | °K | number | Num[2000..6500#P0] |
+| ct | TRANSITION_TIME | time.span | ms | number | Num[0..10000#P0] |
 | ct | VOLTAGE | value.voltage | V | number | Num[80..150#P1] |
 | ct | WORKING | indicator.working |  | string | 'YES' or 'NO' |
 | dimmer | ACTUAL | value.dimmer | % | number | Num[0..100#P2] |
 | dimmer | BATTERY | value.battery | % | number | Num[0..100#P2] |
 | dimmer | CONSUMPTION | value.power.consumption | Wh | number | Num[20..500#P0] |
-| dimmer | CURRENT | value.current | mA | number | TODO |
+| dimmer | CURRENT | value.current | mA | number | Num[100..500#P0] |
 | dimmer | ELECTRIC_POWER | value.power | W | number | Num[20..500#P0] |
 | dimmer | ERROR | indicator.error |  | string | 'YES' or 'NO' |
 | dimmer | FREQUENCY | value.frequency | Hz | number | Num[5000..15000#P0] |
 | dimmer | SET | level.dimmer | % | number | Num[0..100#P2] |
 | dimmer | SET | level.dimmer | % | number | Num[0..100#P2] |
-| dimmer | TRANSITION_TIME | time.span | ms | number | TODO |
+| dimmer | TRANSITION_TIME | time.span | ms | number | Num[0..10000#P0] |
 | dimmer | VOLTAGE | value.voltage | V | number | Num[80..150#P1] |
 | dimmer | WORKING | indicator.working |  | string | 'YES' or 'NO' |
 | door | BATTERY | value.battery | % | number | Num[0..100#P2] |
@@ -115,24 +115,24 @@ There are a few wrappers available:
 | gate | WORKING | indicator.working |  | string | 'YES' or 'NO' |
 | hue | BATTERY | value.battery | % | number | Num[0..100#P2] |
 | hue | CONSUMPTION | value.power.consumption | Wh | number | Num[20..500#P0] |
-| hue | CURRENT | value.current | mA | number | TODO |
+| hue | CURRENT | value.current | mA | number | Num[100..500#P0] |
 | hue | DIMMER | level.dimmer | % | number | Num[0..100#P2] |
 | hue | ELECTRIC_POWER | value.power | W | number | Num[20..500#P0] |
 | hue | ERROR | indicator.error |  | string | 'YES' or 'NO' |
 | hue | FREQUENCY | value.frequency | Hz | number | Num[5000..15000#P0] |
-| hue | HUE | level.color.hue | ° | number | TODO |
-| hue | HUE | level.color.hue | ° | number | TODO |
+| hue | HUE | level.color.hue | ° | number | Num[0..359#P1] |
+| hue | HUE | level.color.hue | ° | number | Num[0..359#P1] |
 | hue | SATURATION | level.color.saturation | % | number | Num[0..100#P2] |
-| hue | TEMPERATURE | level.color.temperature | °K | number | TODO |
-| hue | TRANSITION_TIME | time.span | ms | number | TODO |
+| hue | TEMPERATURE | level.color.temperature | °K | number | Num[2000..6500#P0] |
+| hue | TRANSITION_TIME | time.span | ms | number | Num[0..10000#P0] |
 | hue | VOLTAGE | value.voltage | V | number | Num[80..150#P1] |
 | hue | WORKING | indicator.working |  | string | 'YES' or 'NO' |
 | humidity | ACTUAL | value.humidity | % | number | Num[0..100#P2] |
 | humidity | ACTUAL | value.humidity | % | number | Num[0..100#P2] |
 | humidity | BATTERY | value.battery | % | number | Num[0..100#P2] |
 | humidity | ERROR | indicator.error |  | string | 'YES' or 'NO' |
-| illuminance | ACTUAL | value.brightness | lux | number | TODO |
-| illuminance | ACTUAL | value.brightness | lux | number | TODO |
+| illuminance | ACTUAL | value.brightness | lux | number | Num[0..100000#P0] |
+| illuminance | ACTUAL | value.brightness | lux | number | Num[0..100000#P0] |
 | illuminance | BATTERY | value.battery | % | number | Num[0..100#P2] |
 | illuminance | ERROR | indicator.error |  | string | 'YES' or 'NO' |
 | image | BATTERY | value.battery | % | number | Num[0..100#P2] |
@@ -152,7 +152,7 @@ There are a few wrappers available:
 | levelSlider | WORKING | indicator.working |  | string | 'YES' or 'NO' |
 | light | BATTERY | value.battery | % | number | Num[0..100#P2] |
 | light | CONSUMPTION | value.power.consumption | Wh | number | Num[20..500#P0] |
-| light | CURRENT | value.current | mA | number | TODO |
+| light | CURRENT | value.current | mA | number | Num[100..500#P0] |
 | light | ELECTRIC_POWER | value.power | W | number | Num[20..500#P0] |
 | light | ERROR | indicator.error |  | string | 'YES' or 'NO' |
 | light | FREQUENCY | value.frequency | Hz | number | Num[5000..15000#P0] |
@@ -177,24 +177,24 @@ There are a few wrappers available:
 | lock | BATTERY | value.battery | % | number | Num[0..100#P2] |
 | lock | ERROR | indicator.error |  | string | 'YES' or 'NO' |
 | lock | WORKING | indicator.working |  | string | 'YES' or 'NO' |
-| mediaPlayer | ALBUM | media.album |  | string | TODO |
-| mediaPlayer | ARTIST | media.artist |  | string | TODO |
+| mediaPlayer | ALBUM | media.album |  | string |  |
+| mediaPlayer | ARTIST | media.artist |  | string |  |
 | mediaPlayer | BATTERY | value.battery | % | number | Num[0..100#P2] |
 | mediaPlayer | COVER | media.cover |  | string | TODO |
 | mediaPlayer | DURATION | media.duration | sec | number | Num[0..300#P0] |
 | mediaPlayer | ELAPSED | media.elapsed | sec | number | Num[0..300#P0] |
-| mediaPlayer | EPISODE | media.episode |  | string | TODO |
+| mediaPlayer | EPISODE | media.episode |  | string |  |
 | mediaPlayer | ERROR | indicator.error |  | string | 'YES' or 'NO' |
 | mediaPlayer | REPEAT | media.mode.repeat |  | number | TODO |
-| mediaPlayer | SEASON | media.season |  | string | TODO |
+| mediaPlayer | SEASON | media.season |  | string |  |
 | mediaPlayer | SEEK | media.seek |  | number | TODO |
-| mediaPlayer | TITLE | media.title |  | string | TODO |
-| mediaPlayer | TRACK | media.track |  | string | TODO |
+| mediaPlayer | TITLE | media.title |  | string |  |
+| mediaPlayer | TRACK | media.track |  | string |  |
 | mediaPlayer | VOLUME | level.volume | % | number | Num[0..100#P2] |
 | mediaPlayer | VOLUME_ACTUAL | value.volume | % | number | Num[0..100#P2] |
 | motion | BATTERY | value.battery | % | number | Num[0..100#P2] |
 | motion | ERROR | indicator.error |  | string | 'YES' or 'NO' |
-| motion | SECOND | value.brightness | lux | number | TODO |
+| motion | SECOND | value.brightness | lux | number | Num[0..100000#P0] |
 | percentage | ACTUAL | value | % | number | Num[0..100#P2] |
 | percentage | BATTERY | value.battery | % | number | Num[0..100#P2] |
 | percentage | ERROR | indicator.error |  | string | 'YES' or 'NO' |
@@ -205,7 +205,7 @@ There are a few wrappers available:
 | rgb | BLUE | level.color.blue |  | number | Num[0..255#P0] |
 | rgb | BLUE | level.color.blue |  | number | Num[0..255#P0] |
 | rgb | CONSUMPTION | value.power.consumption | Wh | number | Num[20..500#P0] |
-| rgb | CURRENT | value.current | mA | number | TODO |
+| rgb | CURRENT | value.current | mA | number | Num[100..500#P0] |
 | rgb | DIMMER | level.dimmer | % | number | Num[0..100#P2] |
 | rgb | ELECTRIC_POWER | value.power | W | number | Num[20..500#P0] |
 | rgb | ERROR | indicator.error |  | string | 'YES' or 'NO' |
@@ -214,39 +214,39 @@ There are a few wrappers available:
 | rgb | GREEN | level.color.green |  | number | Num[0..255#P0] |
 | rgb | RED | level.color.red |  | number | Num[0..255#P0] |
 | rgb | RED | level.color.red |  | number | Num[0..255#P0] |
-| rgb | TEMPERATURE | level.color.temperature | °K | number | Num[0..1000#P0] |
-| rgb | TRANSITION_TIME | time.span | ms | number | TODO |
+| rgb | TEMPERATURE | level.color.temperature | °K | number | Num[2000..6500#P0] |
+| rgb | TRANSITION_TIME | time.span | ms | number | Num[0..10000#P0] |
 | rgb | VOLTAGE | value.voltage | V | number | Num[80..150#P1] |
 | rgb | WHITE | level.color.white |  | number | Num[0..255#P0] |
 | rgb | WORKING | indicator.working |  | string | 'YES' or 'NO' |
 | rgbSingle | BATTERY | value.battery | % | number | Num[0..100#P2] |
 | rgbSingle | CONSUMPTION | value.power.consumption | Wh | number | Num[20..500#P0] |
-| rgbSingle | CURRENT | value.current | mA | number | TODO |
+| rgbSingle | CURRENT | value.current | mA | number | Num[100..500#P0] |
 | rgbSingle | DIMMER | level.dimmer | % | number | Num[0..100#P2] |
 | rgbSingle | ELECTRIC_POWER | value.power | W | number | Num[20..500#P0] |
 | rgbSingle | ERROR | indicator.error |  | string | 'YES' or 'NO' |
 | rgbSingle | FREQUENCY | value.frequency | Hz | number | Num[5000..15000#P0] |
 | rgbSingle | RGB | level.color.rgb |  | string | TODO |
 | rgbSingle | RGB | level.color.rgb |  | string | TODO |
-| rgbSingle | TEMPERATURE | level.color.temperature | °K | number | TODO |
-| rgbSingle | TRANSITION_TIME | time.span | ms | number | TODO |
+| rgbSingle | TEMPERATURE | level.color.temperature | °K | number | Num[2000..6500#P0] |
+| rgbSingle | TRANSITION_TIME | time.span | ms | number | Num[0..10000#P0] |
 | rgbSingle | VOLTAGE | value.voltage | V | number | Num[80..150#P1] |
 | rgbSingle | WORKING | indicator.working |  | string | 'YES' or 'NO' |
 | rgbwSingle | BATTERY | value.battery | % | number | Num[0..100#P2] |
 | rgbwSingle | CONSUMPTION | value.power.consumption | Wh | number | Num[20..500#P0] |
-| rgbwSingle | CURRENT | value.current | mA | number | TODO |
+| rgbwSingle | CURRENT | value.current | mA | number | Num[100..500#P0] |
 | rgbwSingle | DIMMER | level.dimmer | % | number | Num[0..100#P2] |
 | rgbwSingle | ELECTRIC_POWER | value.power | W | number | Num[20..500#P0] |
 | rgbwSingle | ERROR | indicator.error |  | string | 'YES' or 'NO' |
 | rgbwSingle | FREQUENCY | value.frequency | Hz | number | Num[5000..15000#P0] |
 | rgbwSingle | RGBW | level.color.rgbw |  | string | TODO |
 | rgbwSingle | RGBW | level.color.rgbw |  | string | TODO |
-| rgbwSingle | TEMPERATURE | level.color.temperature | °K | number | Num[0..1000#P0] |
-| rgbwSingle | TRANSITION_TIME | time.span | ms | number | TODO |
+| rgbwSingle | TEMPERATURE | level.color.temperature | °K | number | Num[2000..6500#P0] |
+| rgbwSingle | TRANSITION_TIME | time.span | ms | number | Num[0..10000#P0] |
 | rgbwSingle | VOLTAGE | value.voltage | V | number | Num[80..150#P1] |
 | rgbwSingle | WORKING | indicator.working |  | string | 'YES' or 'NO' |
 | socket | CONSUMPTION | value.power.consumption | Wh | number | Num[20..500#P0] |
-| socket | CURRENT | value.current | mA | number | TODO |
+| socket | CURRENT | value.current | mA | number | Num[100..500#P0] |
 | socket | ELECTRIC_POWER | value.power | W | number | Num[20..500#P0] |
 | socket | ERROR | indicator.error |  | string | 'YES' or 'NO' |
 | socket | FREQUENCY | value.frequency | Hz | number | Num[5000..15000#P0] |
@@ -269,11 +269,11 @@ There are a few wrappers available:
 | vacuumCleaner | ERROR | indicator.error |  | string | 'YES' or 'NO' |
 | vacuumCleaner | FILTER | value.usage.filter | % | number | Num[0..100#P2] |
 | vacuumCleaner | MAP_BASE64 | vacuum.map.base64 |  | string | TODO |
-| vacuumCleaner | MODE | level.mode.cleanup |  | number | TODO |
-| vacuumCleaner | MODE | level.mode.cleanup |  | number | TODO |
+| vacuumCleaner | MODE | level.mode.cleanup |  | number | Num[0..3#P0] |
+| vacuumCleaner | MODE | level.mode.cleanup |  | number | Num[0..3#P0] |
 | vacuumCleaner | SENSORS | value.usage.sensors | % | number | Num[0..100#P2] |
 | vacuumCleaner | SIDE_BRUSH | value.usage.brush.side | % | number | Num[0..100#P2] |
-| vacuumCleaner | STATE | value.state |  | number | TODO |
+| vacuumCleaner | STATE | value.state |  | number | Num[0..5#P0] (0=idle,1=docked,2=error,3=cleaning,4=paused,5=returning) |
 | vacuumCleaner | WASTE | value.waste | % | number | Num[0..100#P2] |
 | vacuumCleaner | WATER | value.water | % | number | Num[0..100#P2] |
 | vacuumCleaner | WORK_MODE | level.mode.work |  | number | TODO |
@@ -306,12 +306,12 @@ There are a few wrappers available:
 | weatherCurrent | ICON | weather.icon |  | string | TODO |
 | weatherCurrent | PRECIPITATION_CHANCE | value.precipitation.chance | % | number | Num[0..100#P2] |
 | weatherCurrent | PRECIPITATION_TYPE | value.precipitation.type |  | number | TODO |
-| weatherCurrent | PRESSURE | value.pressure | mbar | number | TODO |
+| weatherCurrent | PRESSURE | value.pressure | mbar | number | Num[950..1050#P1] |
 | weatherCurrent | PRESSURE_TENDENCY | value.pressure.tendency |  | string | TODO |
 | weatherCurrent | REAL_FEEL_TEMPERATURE | value.temperature.windchill | °C | number | Num[-5..35#P1] |
-| weatherCurrent | UV | value.uv |  | number | TODO |
+| weatherCurrent | UV | value.uv |  | number | Num[0..11#P0] |
 | weatherCurrent | WEATHER | weather.state |  | string | TODO |
-| weatherCurrent | WIND_DIRECTION | value.direction.wind | ° | string | TODO [TYPE ADJUSTED] |
+| weatherCurrent | WIND_DIRECTION | value.direction.wind | ° | string | Num[0..359#P1] [TYPE ADJUSTED] |
 | weatherCurrent | WIND_GUST | value.speed.wind.gust | km/h | number | Num[5..20#P2] |
 | weatherCurrent | WIND_SPEED | value.speed.wind$ | km/h | number | Num[5..20#P2] |
 | weatherForecast | DATE | date.forecast.0 |  | string | TODO |
