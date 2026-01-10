@@ -5,6 +5,10 @@ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
 var __copyProps = (to, from, except, desc) => {
   if (from && typeof from === "object" || typeof from === "function") {
     for (let key of __getOwnPropNames(from))
@@ -21,6 +25,13 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
   mod
 ));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var main_exports = {};
+__export(main_exports, {
+  createDesiredStateDefinitions: () => createDesiredStateDefinitions,
+  getDeviceMetadata: () => getDeviceMetadata
+});
+module.exports = __toCommonJS(main_exports);
 var utils = __toESM(require("@iobroker/adapter-core"));
 var import_type_detector = __toESM(require("@iobroker/type-detector"));
 const generationTypes = ["all", "required"];
@@ -58,22 +69,6 @@ const printMissingDefaultRoleMarkdown = (states) => {
   for (const state of sortedStates) {
     output += `| ${state.deviceRef.name} | ${state.name} | ${getStateType(state, "N/A")} | \`${state.role}\` |
 `;
-  }
-  console.log(output);
-};
-const printMissingValueGenerators = (statesDefsByUnit) => {
-  let output = "| Unit | Value Type | Generation | Used By |\n";
-  output += "| - | - | - |\n";
-  for (const unit of Object.keys(statesDefsByUnit).sort()) {
-    const states = statesDefsByUnit[unit];
-    const typeDefs = [...new Set(states.map((s) => s.commonType))];
-    for (const type of typeDefs.sort()) {
-      const usedBy = states.filter(
-        (s) => unit === "N/A" ? !s.state.defaultUnit : s.state.defaultUnit === unit && s.commonType === type
-      ).map((ds) => `${ds.device.name}.${ds.state.name}`);
-      output += `| ${unit} | ${type} | | ${usedBy.join(", ")} |
-`;
-    }
   }
   console.log(output);
 };
@@ -213,6 +208,44 @@ const getValueGenerator = (stateDefinition) => {
   }
   return void 0;
 };
+const createDesiredStateDefinitions = (namespace, config, validDevices) => {
+  const getDeviceType = (genType) => `${namespace}.${TestDevices.GetDeviceFolderName()}.${genType}`;
+  const getDeviceRoot = (genType, device) => `${getDeviceType(genType)}.${device.name}`;
+  const getFilterContext = (device) => {
+    return { device, config };
+  };
+  const isReadOnly = (state) => (!!state.read || state.read === void 0) && !state.write;
+  const stateCacheMemory = crossProduct(generationTypes, validDevices).map((arr) => ({
+    generationType: arr[0],
+    device: arr[1]
+  })).map((m) => ({
+    ...m,
+    context: getFilterContext(m.device),
+    deviceType: getDeviceType(m.generationType),
+    deviceRoot: getDeviceRoot(m.generationType, m.device)
+  })).map(
+    (m) => m.device.states.filter((s) => deviceFilter[m.generationType](m.context, s)).map((s) => {
+      var _a, _b;
+      return {
+        ...m,
+        state: s,
+        read: (_a = s.read) != null ? _a : true,
+        write: (_b = s.write) != null ? _b : false,
+        stateFqn: `${m.deviceRoot}.${s.name}`,
+        commonType: getStateType(s),
+        isReadOnly: isReadOnly(s),
+        valueGenerator: void 0
+      };
+    })
+  ).reduce((prev, curr) => [...prev, ...curr], []).map((sd) => {
+    var _a;
+    return {
+      ...sd,
+      valueGenerator: (_a = getValueGenerator(sd)) != null ? _a : getFallbackValueGenerator()
+    };
+  });
+  return stateCacheMemory.reduce((prev, curr) => ({ ...prev, [curr.stateFqn]: curr }), {});
+};
 class TestDevices extends utils.Adapter {
   static deviceFolderName = "devices";
   static triggerFolderName = "triggers";
@@ -234,67 +267,15 @@ class TestDevices extends utils.Adapter {
     const deviceNamesWithMissingDefaultRoles = this.getDeviceNamesMissingDefaultRoles(allDevices);
     this.analyzeDuplicateDefaultRoles(allDevices);
     this.validDevices = allDevices.filter((d) => !deviceNamesWithMissingDefaultRoles.includes(d.name));
-    this.stateLookup = this.createDesiredStateDefinitions(this.validDevices);
+    this.stateLookup = createDesiredStateDefinitions(this.namespace, this.config, this.validDevices);
     this.stateNames = Object.keys(this.stateLookup);
     this.logLater(`Discovering desired states took ${Date.now() - startMs}ms.`);
-    const missingValueGenerators = Object.values(this.stateLookup).filter((s) => s.isReadOnly).filter((s) => !getValueGenerator(s)).reduce((prev, curr) => {
-      var _a;
-      const unitSafe = (_a = curr.state.defaultUnit) != null ? _a : "N/A";
-      if (Object.hasOwnProperty.call(prev, unitSafe)) {
-        prev[unitSafe].push(curr);
-      } else {
-        prev[unitSafe] = [curr];
-      }
-      return prev;
-    }, {});
-    if (Object.keys(missingValueGenerators).length > 0) {
-      this.logLater(`There are missing value generators.`);
-      printMissingValueGenerators(missingValueGenerators);
-    }
     const triggerChangeRegex = `^${this.namespace.replace(".", "\\.")}\\.${TestDevices.GetTriggerFolderName()}\\.((${generationTypes.join("|")})\\.([^\\.]*))$`;
     this.logLater(`Constructed trigger change regex: ${triggerChangeRegex}`);
     const deviceChangeRegex = `^${this.namespace}\\.${TestDevices.GetDeviceFolderName()}\\.(${generationTypes.join("|")})\\.([^\\.]*)\\.([^\\.]*)$`;
     this.logLater(`Constructed device change regex: ${deviceChangeRegex}`);
     this.triggerChangeRegex = new RegExp(triggerChangeRegex);
     this.deviceStateChangeRegex = new RegExp(deviceChangeRegex);
-  }
-  createDesiredStateDefinitions(validDevices) {
-    const getDeviceType = (genType) => `${this.namespace}.${TestDevices.GetDeviceFolderName()}.${genType}`;
-    const getDeviceRoot = (genType, device) => `${getDeviceType(genType)}.${device.name}`;
-    const getFilterContext = (device) => {
-      return { device, config: this.config };
-    };
-    const isReadOnly = (state) => (!!state.read || state.read === void 0) && !state.write;
-    const stateCacheMemory = crossProduct(generationTypes, validDevices).map((arr) => ({
-      generationType: arr[0],
-      device: arr[1]
-    })).map((m) => ({
-      ...m,
-      context: getFilterContext(m.device),
-      deviceType: getDeviceType(m.generationType),
-      deviceRoot: getDeviceRoot(m.generationType, m.device)
-    })).map(
-      (m) => m.device.states.filter((s) => deviceFilter[m.generationType](m.context, s)).map((s) => {
-        var _a, _b;
-        return {
-          ...m,
-          state: s,
-          read: (_a = s.read) != null ? _a : true,
-          write: (_b = s.write) != null ? _b : false,
-          stateFqn: `${m.deviceRoot}.${s.name}`,
-          commonType: getStateType(s),
-          isReadOnly: isReadOnly(s),
-          valueGenerator: void 0
-        };
-      })
-    ).reduce((prev, curr) => [...prev, ...curr], []).map((sd) => {
-      var _a;
-      return {
-        ...sd,
-        valueGenerator: (_a = getValueGenerator(sd)) != null ? _a : getFallbackValueGenerator()
-      };
-    });
-    return stateCacheMemory.reduce((prev, curr) => ({ ...prev, [curr.stateFqn]: curr }), {});
   }
   static GetDeviceFolderName() {
     return TestDevices.deviceFolderName;
@@ -642,4 +623,9 @@ if (require.main !== module) {
 } else {
   (() => new TestDevices())();
 }
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  createDesiredStateDefinitions,
+  getDeviceMetadata
+});
 //# sourceMappingURL=main.js.map

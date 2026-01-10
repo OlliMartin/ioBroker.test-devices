@@ -75,6 +75,7 @@ declare global {
 			s?: string[];
 
 			isFallback?: boolean;
+			description?: string;
 		};
 
 		type ValueGeneratorDefinition = ValueGeneratorBase &

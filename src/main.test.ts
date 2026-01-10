@@ -6,19 +6,18 @@
  */
 
 import { expect } from 'chai';
-// import { functionToTest } from "./moduleToTest";
+import { getDeviceMetadata, createDesiredStateDefinitions } from './main';
 
-describe('module to test => function to test', () => {
-	// initializing logic
-	const expected = 5;
+describe('createDesiredStateDefinitions', () => {
+	let deviceMetadata: ioBroker.DeviceDefinition[];
 
-	it(`should return ${expected}`, () => {
-		const result = 5;
-		// assign result a value from functionToTest
-		expect(result).to.equal(expected);
-		// or using the should() syntax
-		result.should.equal(expected);
+	before(() => {
+		deviceMetadata = getDeviceMetadata();
 	});
-	// ... more tests => it
+
+	it(`should not fall back value generators`, () => {
+		const stateDefinitions = createDesiredStateDefinitions('test-devices.0', {}, deviceMetadata);
+
+		expect(stateDefinitions.length).to.be.greaterThan(0);
+	});
 });
-// ... more test suites => describe

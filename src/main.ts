@@ -14,7 +14,7 @@ const detector: ChannelDetector = new ChannelDetector();
 
 const deviceTypeBlacklist: string[] = ['chart'];
 
-const getDeviceMetadata: () => ioBroker.DeviceDefinition[] = () => {
+export const getDeviceMetadata: () => ioBroker.DeviceDefinition[] = () => {
 	const knownPatterns = ChannelDetector.getPatterns();
 
 	return Object.entries(knownPatterns)
@@ -51,28 +51,6 @@ const printMissingDefaultRoleMarkdown = (states: ioBroker.StateWithDeviceRef[]):
 	/*                                                                                   *caugh* */
 	for (const state of sortedStates) {
 		output += `| ${state.deviceRef.name} | ${state.name} | ${getStateType(state, 'N/A' as any)} | \`${state.role}\` |\n`;
-	}
-
-	console.log(output);
-};
-
-const printMissingValueGenerators = (statesDefsByUnit: Record<string, ioBroker.DeviceStateDefinition[]>): void => {
-	let output = '| Unit | Value Type | Generation | Used By |\n';
-	output += '| - | - | - |\n';
-
-	for (const unit of Object.keys(statesDefsByUnit).sort()) {
-		const states = statesDefsByUnit[unit];
-		const typeDefs = [...new Set(states.map(s => s.commonType))];
-
-		for (const type of typeDefs.sort()) {
-			const usedBy = states
-				.filter(s =>
-					unit === 'N/A' ? !s.state.defaultUnit : s.state.defaultUnit === unit && s.commonType === type,
-				)
-				.map(ds => `${ds.device.name}.${ds.state.name}`);
-
-			output += `| ${unit} | ${type} | | ${usedBy.join(', ')} |\n`;
-		}
 	}
 
 	console.log(output);
@@ -242,6 +220,58 @@ const getValueGenerator = (
 	return undefined;
 };
 
+export const createDesiredStateDefinitions = (
+	namespace: string,
+	config: ioBroker.AdapterConfig,
+	validDevices: ioBroker.DeviceDefinition[],
+): Record<string, ioBroker.DeviceStateDefinition> => {
+	const getDeviceType = (genType: ioBroker.DeviceStatesGenerationType): string =>
+		`${namespace}.${TestDevices.GetDeviceFolderName()}.${genType}`;
+	const getDeviceRoot = (genType: ioBroker.DeviceStatesGenerationType, device: ioBroker.DeviceDefinition): string =>
+		`${getDeviceType(genType)}.${device.name}`;
+
+	// 'NoOp' for now
+	const getFilterContext = (device: ioBroker.DeviceDefinition): ioBroker.DeviceFilterContext => {
+		return { device, config: config };
+	};
+
+	const isReadOnly = (state: ExternalDetectorState): boolean =>
+		(!!state.read || state.read === undefined) && !state.write;
+
+	const stateCacheMemory: ioBroker.DeviceStateDefinition[] = crossProduct(generationTypes, validDevices)
+		.map(arr => ({
+			generationType: arr[0],
+			device: arr[1],
+		}))
+		.map(m => ({
+			...m,
+			context: getFilterContext(m.device),
+			deviceType: getDeviceType(m.generationType),
+			deviceRoot: getDeviceRoot(m.generationType, m.device),
+		}))
+		.map(m =>
+			m.device.states
+				.filter(s => deviceFilter[m.generationType](m.context, s))
+				.map(s => ({
+					...m,
+					state: s,
+					read: s.read ?? true,
+					write: s.write ?? false,
+					stateFqn: `${m.deviceRoot}.${s.name}`,
+					commonType: getStateType(s),
+					isReadOnly: isReadOnly(s),
+					valueGenerator: undefined,
+				})),
+		)
+		.reduce((prev, curr) => [...prev, ...curr], [])
+		.map(sd => ({
+			...sd,
+			valueGenerator: getValueGenerator(sd) ?? getFallbackValueGenerator(),
+		}));
+
+	return stateCacheMemory.reduce((prev, curr) => ({ ...prev, [curr.stateFqn]: curr }), {});
+};
+
 class TestDevices extends utils.Adapter {
 	private static deviceFolderName: string = 'devices';
 	private static triggerFolderName: string = 'triggers';
@@ -271,30 +301,10 @@ class TestDevices extends utils.Adapter {
 
 		this.validDevices = allDevices.filter(d => !deviceNamesWithMissingDefaultRoles.includes(d.name));
 
-		this.stateLookup = this.createDesiredStateDefinitions(this.validDevices);
+		this.stateLookup = createDesiredStateDefinitions(this.namespace, this.config, this.validDevices);
 		this.stateNames = Object.keys(this.stateLookup);
 
 		this.logLater(`Discovering desired states took ${Date.now() - startMs}ms.`);
-
-		const missingValueGenerators: Record<string, ioBroker.DeviceStateDefinition[]> = Object.values(this.stateLookup)
-			.filter(s => s.isReadOnly)
-			.filter(s => !getValueGenerator(s))
-			.reduce((prev: Record<string, ioBroker.DeviceStateDefinition[]>, curr) => {
-				const unitSafe = curr.state.defaultUnit ?? 'N/A';
-
-				if (Object.hasOwnProperty.call(prev, unitSafe)) {
-					prev[unitSafe].push(curr);
-				} else {
-					prev[unitSafe] = [curr];
-				}
-
-				return prev;
-			}, {});
-
-		if (Object.keys(missingValueGenerators).length > 0) {
-			this.logLater(`There are missing value generators.`);
-			printMissingValueGenerators(missingValueGenerators);
-		}
 
 		const triggerChangeRegex = `^${this.namespace.replace('.', '\\.')}\\.${TestDevices.GetTriggerFolderName()}\\.((${generationTypes.join('|')})\\.([^\\.]*))$`;
 		this.logLater(`Constructed trigger change regex: ${triggerChangeRegex}`);
@@ -304,58 +314,6 @@ class TestDevices extends utils.Adapter {
 
 		this.triggerChangeRegex = new RegExp(triggerChangeRegex);
 		this.deviceStateChangeRegex = new RegExp(deviceChangeRegex);
-	}
-
-	private createDesiredStateDefinitions(
-		validDevices: ioBroker.DeviceDefinition[],
-	): Record<string, ioBroker.DeviceStateDefinition> {
-		const getDeviceType = (genType: ioBroker.DeviceStatesGenerationType): string =>
-			`${this.namespace}.${TestDevices.GetDeviceFolderName()}.${genType}`;
-		const getDeviceRoot = (
-			genType: ioBroker.DeviceStatesGenerationType,
-			device: ioBroker.DeviceDefinition,
-		): string => `${getDeviceType(genType)}.${device.name}`;
-
-		// 'NoOp' for now
-		const getFilterContext = (device: ioBroker.DeviceDefinition): ioBroker.DeviceFilterContext => {
-			return { device, config: this.config };
-		};
-
-		const isReadOnly = (state: ExternalDetectorState): boolean =>
-			(!!state.read || state.read === undefined) && !state.write;
-
-		const stateCacheMemory: ioBroker.DeviceStateDefinition[] = crossProduct(generationTypes, validDevices)
-			.map(arr => ({
-				generationType: arr[0],
-				device: arr[1],
-			}))
-			.map(m => ({
-				...m,
-				context: getFilterContext(m.device),
-				deviceType: getDeviceType(m.generationType),
-				deviceRoot: getDeviceRoot(m.generationType, m.device),
-			}))
-			.map(m =>
-				m.device.states
-					.filter(s => deviceFilter[m.generationType](m.context, s))
-					.map(s => ({
-						...m,
-						state: s,
-						read: s.read ?? true,
-						write: s.write ?? false,
-						stateFqn: `${m.deviceRoot}.${s.name}`,
-						commonType: getStateType(s),
-						isReadOnly: isReadOnly(s),
-						valueGenerator: undefined,
-					})),
-			)
-			.reduce((prev, curr) => [...prev, ...curr], [])
-			.map(sd => ({
-				...sd,
-				valueGenerator: getValueGenerator(sd) ?? getFallbackValueGenerator(),
-			}));
-
-		return stateCacheMemory.reduce((prev, curr) => ({ ...prev, [curr.stateFqn]: curr }), {});
 	}
 
 	public static GetDeviceFolderName(): string {
