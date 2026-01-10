@@ -33,6 +33,9 @@ declare global {
 			device: DeviceDefinition;
 			commonType: ioBroker.CommonType;
 			isReadOnly: boolean;
+			read: boolean;
+			write: boolean;
+			valueGenerator?: ioBroker.ValueGenerator<ioBroker.StateValue>;
 		}
 
 		type DeviceStatesGenerationType = 'all' | 'required';
@@ -43,6 +46,39 @@ declare global {
 			ioBroker.DeviceStatesGenerationType,
 			(ctx: ioBroker.DeviceFilterContext, state: ExternalDetectorState) => boolean
 		>;
+
+		type ValueGenerator<T extends StateValue> = (
+			stateDefinition: DeviceStateDefinition,
+			stateValue?: StateValue,
+		) => T;
+
+		// Probably there is a smarter way to achieve this.
+		type StringValueGeneratorDefinition = {
+			t: 'string';
+			gen: ValueGenerator<string>;
+		};
+
+		type NumberValueGeneratorDefinition = {
+			t: 'number';
+			gen: ValueGenerator<number>;
+		};
+
+		type BooleanValueGeneratorDefinition = {
+			t: 'boolean';
+			gen: ValueGenerator<boolean>;
+		};
+
+		type ValueGeneratorBase = {
+			u: string;
+
+			d?: string[];
+			s?: string[];
+
+			isFallback?: boolean;
+		};
+
+		type ValueGeneratorDefinition = ValueGeneratorBase &
+			(StringValueGeneratorDefinition | NumberValueGeneratorDefinition | BooleanValueGeneratorDefinition);
 	}
 }
 

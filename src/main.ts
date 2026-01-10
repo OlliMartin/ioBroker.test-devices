@@ -56,6 +56,192 @@ const printMissingDefaultRoleMarkdown = (states: ioBroker.StateWithDeviceRef[]):
 	console.log(output);
 };
 
+const printMissingValueGenerators = (statesDefsByUnit: Record<string, ioBroker.DeviceStateDefinition[]>): void => {
+	let output = '| Unit | Value Type | Generation | Used By |\n';
+	output += '| - | - | - |\n';
+
+	for (const unit of Object.keys(statesDefsByUnit).sort()) {
+		const states = statesDefsByUnit[unit];
+		const typeDefs = [...new Set(states.map(s => s.commonType))];
+
+		for (const type of typeDefs.sort()) {
+			const usedBy = states
+				.filter(s =>
+					unit === 'N/A' ? !s.state.defaultUnit : s.state.defaultUnit === unit && s.commonType === type,
+				)
+				.map(ds => `${ds.device.name}.${ds.state.name}`);
+
+			output += `| ${unit} | ${type} | | ${usedBy.join(', ')} |\n`;
+		}
+	}
+
+	console.log(output);
+};
+
+const getFallbackValueGenerator = (): ioBroker.ValueGenerator<ioBroker.StateValue> => {
+	return (sd, _) => {
+		if (sd.commonType === 'number') {
+			return Math.random();
+		}
+		if (sd.commonType === 'string') {
+			return Math.random().toFixed(2);
+		}
+		if (sd.commonType === 'boolean') {
+			return Math.random() > 0.5;
+		}
+
+		return Math.random();
+	};
+};
+
+const FallbackValueGenerator: ioBroker.ValueGenerator<string> = sd =>
+	`${sd.device.name}.${sd.state.name}#${Math.random()}`;
+
+const getToggleBoolValueGenerator = (): ioBroker.ValueGenerator<boolean> => {
+	return (_, val) => !val;
+};
+
+const getNumberRangeGenerator = (min: number, max: number, decimals: number): ioBroker.ValueGenerator<number> => {
+	return (_1, _2) => {
+		return Number((Math.random() * (max - min) + min).toFixed(decimals));
+	};
+};
+
+const getRandomNumberGenerator = (): ioBroker.ValueGenerator<number> => {
+	return getNumberRangeGenerator(0, 20000, 2);
+};
+
+const adjustType = <TIn extends ioBroker.StateValue, TOut extends ioBroker.StateValue>(
+	inputValueGen: ioBroker.ValueGenerator<TIn>,
+	convert: (intermediate: TIn) => TOut,
+): ioBroker.ValueGenerator<TOut> => {
+	return (dsd, val) => convert(inputValueGen(dsd, val));
+};
+
+const commonValueGenerators: ioBroker.ValueGeneratorDefinition[] = [
+	{ u: '%', t: 'number', gen: getNumberRangeGenerator(0, 100, 2) },
+	{ u: 'Hz', t: 'number', gen: getNumberRangeGenerator(5000, 15000, 0) },
+	{ u: 'V', t: 'number', gen: getNumberRangeGenerator(80, 150, 1) },
+	{ u: 'W', t: 'number', gen: getNumberRangeGenerator(20, 500, 0) },
+	{ u: 'Wh', t: 'number', gen: getNumberRangeGenerator(20, 500, 0) },
+	{ u: 'km/h', t: 'number', gen: getNumberRangeGenerator(5, 20, 2) },
+	{ u: 'lux', t: 'number', gen: getRandomNumberGenerator() },
+	{ u: 'mA', t: 'number', gen: getRandomNumberGenerator() },
+	{ u: 'mbar', t: 'number', gen: getRandomNumberGenerator() },
+	{ u: 'sec', t: 'number', gen: getNumberRangeGenerator(0, 300, 0) },
+	{ u: '°', t: 'number', gen: getRandomNumberGenerator() },
+
+	/* Longitude & Latidue */
+	{ u: '°', t: 'number', /* d: 'location', */ s: ['LONGITUDE'], gen: getNumberRangeGenerator(-180, +180, 5) },
+	{ u: '°', t: 'number', /* d: 'location', */ s: ['LATITUDE'], gen: getNumberRangeGenerator(-90, +90, 5) },
+
+	{ u: '°', t: 'string', gen: adjustType(getRandomNumberGenerator(), num => num.toFixed(2)) },
+	{ u: '°C', t: 'number', gen: getNumberRangeGenerator(-5, 35, 1) },
+
+	{
+		u: '%%CUSTOM%%',
+		t: 'number',
+		d: ['rgb', 'rgbwSingle'],
+		s: ['RED', 'GREEN', 'BLUE', 'WHITE'],
+		gen: getNumberRangeGenerator(0, 255, 0),
+	},
+	{
+		u: '%%CUSTOM%%',
+		t: 'number',
+		d: ['rgb', 'rgbwSingle'],
+		s: ['TEMPERATURE'],
+		gen: getNumberRangeGenerator(0, 1000, 0),
+	} /* I'm guessing Kelvin? What's the UOM here? */,
+
+	{
+		u: '%%CUSTOM%%',
+		t: 'string',
+		s: ['WORKING', 'ERROR'],
+		gen: (sd, _) => (sd.state.name === 'WORKING' ? 'YES' : 'NO'),
+	},
+
+	{ u: '%%TYPE_MATCH%%', t: 'number', gen: getRandomNumberGenerator(), isFallback: true },
+	{ u: '%%TYPE_MATCH%%', t: 'string', gen: FallbackValueGenerator, isFallback: true },
+
+	/* Booleans can never be fallbacks */
+	{
+		u: '%%TYPE_MATCH%%',
+		t: 'boolean',
+		gen: getToggleBoolValueGenerator(),
+		isFallback: false,
+	},
+];
+
+const getValueGeneratorRelevance = (vg: ioBroker.ValueGeneratorDefinition): number => {
+	let result = 0;
+	if (vg.u !== '%%CUSTOM%%' && vg.u !== '%%TYPE_MATCH%%') {
+		result += 2;
+	}
+
+	if (vg.d) {
+		result += 3;
+	}
+
+	if (vg.s) {
+		result += 1;
+	}
+	return result;
+};
+
+const getValueGenerator = (
+	stateDefinition: ioBroker.DeviceStateDefinition,
+): ioBroker.ValueGenerator<ioBroker.StateValue> | undefined => {
+	const logFallback = (sd: ioBroker.DeviceStateDefinition, vg: ioBroker.ValueGeneratorDefinition): void => {
+		if (!vg.isFallback) {
+			return;
+		}
+		console.log(`Warning: Fallback used for ${sd.device.name}:${sd.state.name} (${sd.commonType}).`);
+	};
+
+	const exactGeneratorMatches = commonValueGenerators.filter(
+		vgDef =>
+			vgDef.u === stateDefinition.state.defaultUnit &&
+			vgDef.t === stateDefinition.commonType &&
+			(vgDef.d === undefined || vgDef.d.includes(stateDefinition.device.name)) &&
+			(vgDef.s === undefined || vgDef.s.includes(stateDefinition.state.name)),
+	);
+
+	if (exactGeneratorMatches.length === 1) {
+		logFallback(stateDefinition, exactGeneratorMatches[0]);
+		return exactGeneratorMatches[0].gen;
+	} else if (exactGeneratorMatches.length > 1) {
+		const genWithHighestSpecification = exactGeneratorMatches.sort(
+			(a, b) => getValueGeneratorRelevance(b) - getValueGeneratorRelevance(a),
+		);
+
+		return genWithHighestSpecification[0].gen;
+	}
+
+	const customMatches = commonValueGenerators.filter(
+		vgDef =>
+			vgDef.u === '%%CUSTOM%%' &&
+			vgDef.t === stateDefinition.commonType &&
+			(vgDef.d === undefined || vgDef.d.includes(stateDefinition.device.name)) &&
+			(vgDef.s === undefined || vgDef.s.includes(stateDefinition.state.name)),
+	);
+
+	if (customMatches.length === 1) {
+		logFallback(stateDefinition, customMatches[0]);
+		return customMatches[0].gen;
+	}
+
+	const typeMatches = commonValueGenerators.filter(
+		vgDef => vgDef.u === '%%TYPE_MATCH%%' && vgDef.t === stateDefinition.commonType,
+	);
+
+	if (typeMatches.length === 1) {
+		logFallback(stateDefinition, typeMatches[0]);
+		return typeMatches[0].gen;
+	}
+
+	return undefined;
+};
+
 class TestDevices extends utils.Adapter {
 	private static deviceFolderName: string = 'devices';
 	private static triggerFolderName: string = 'triggers';
@@ -72,6 +258,7 @@ class TestDevices extends utils.Adapter {
 		});
 		this.on('message', this.onMessage.bind(this));
 		this.on('ready', this.onReady.bind(this));
+		this.on('stateChange', this.onStateChange.bind(this));
 		this.on('unload', this.onUnload.bind(this));
 
 		const startMs = Date.now();
@@ -89,11 +276,9 @@ class TestDevices extends utils.Adapter {
 
 		this.logLater(`Discovering desired states took ${Date.now() - startMs}ms.`);
 
-		const statesToSimulateChanges: Record<string, ioBroker.DeviceStateDefinition[]> = Object.values(
-			this.stateLookup,
-		)
+		const missingValueGenerators: Record<string, ioBroker.DeviceStateDefinition[]> = Object.values(this.stateLookup)
 			.filter(s => s.isReadOnly)
-			.filter(s => s.commonType !== 'boolean' && s.commonType !== 'string')
+			.filter(s => !getValueGenerator(s))
 			.reduce((prev: Record<string, ioBroker.DeviceStateDefinition[]>, curr) => {
 				const unitSafe = curr.state.defaultUnit ?? 'N/A';
 
@@ -106,18 +291,19 @@ class TestDevices extends utils.Adapter {
 				return prev;
 			}, {});
 
-		this.logLater('Default Units discovered:');
-		for (const unit of Object.entries(statesToSimulateChanges)) {
-			this.logLater(`[${unit[0]}] ${unit[1].length} entries`);
+		if (Object.keys(missingValueGenerators).length > 0) {
+			this.logLater(`There are missing value generators.`);
+			printMissingValueGenerators(missingValueGenerators);
 		}
 
-		const missingValueGenerators = (statesToSimulateChanges['N/A'] ?? []).map(
-			stateDef => `${stateDef.commonType}.${stateDef.state.name}`,
-		);
+		const triggerChangeRegex = `^${this.namespace.replace('.', '\\.')}\\.${TestDevices.GetTriggerFolderName()}\\.((${generationTypes.join('|')})\\.([^\\.]*))$`;
+		this.logLater(`Constructed trigger change regex: ${triggerChangeRegex}`);
 
-		this.logLater(
-			`The follow value generators for read only states are missing: [${missingValueGenerators.join(', ')}]. They will produce completely random values.`,
-		);
+		const deviceChangeRegex = `^${this.namespace}\\.${TestDevices.GetDeviceFolderName()}\\.(${generationTypes.join('|')})\\.([^\\.]*)\\.([^\\.]*)$`;
+		this.logLater(`Constructed device change regex: ${deviceChangeRegex}`);
+
+		this.triggerChangeRegex = new RegExp(triggerChangeRegex);
+		this.deviceStateChangeRegex = new RegExp(deviceChangeRegex);
 	}
 
 	private createDesiredStateDefinitions(
@@ -155,12 +341,19 @@ class TestDevices extends utils.Adapter {
 					.map(s => ({
 						...m,
 						state: s,
+						read: s.read ?? true,
+						write: s.write ?? false,
 						stateFqn: `${m.deviceRoot}.${s.name}`,
 						commonType: getStateType(s),
 						isReadOnly: isReadOnly(s),
+						valueGenerator: undefined,
 					})),
 			)
-			.reduce((prev, curr) => [...prev, ...curr], []);
+			.reduce((prev, curr) => [...prev, ...curr], [])
+			.map(sd => ({
+				...sd,
+				valueGenerator: getValueGenerator(sd) ?? getFallbackValueGenerator(),
+			}));
 
 		return stateCacheMemory.reduce((prev, curr) => ({ ...prev, [curr.stateFqn]: curr }), {});
 	}
@@ -205,9 +398,59 @@ class TestDevices extends utils.Adapter {
 
 		this.setConnected(true);
 		this.log.info(`Start-up finished within ${Date.now() - startMs}ms.`);
+
+		this.subscribeStates(`${this.namespace}.*`);
 	}
 
 	private readonly validCommands: string[] = ['VERIFY_DEVICE_TYPE', 'GET_DEVICE_STATES'];
+
+	private readonly triggerChangeRegex: RegExp;
+	private readonly deviceStateChangeRegex: RegExp;
+	private readonly setReadOnlyStatesOnly: boolean = false; // TODO OMA 2026-01-10: Read from config?
+	private async onStateChange(id: string, state: ioBroker.State | null | undefined): Promise<void> {
+		if (!state || state.ack) {
+			return;
+		}
+
+		if (this.triggerChangeRegex.test(id)) {
+			const startMs = Date.now();
+			const match = this.triggerChangeRegex.exec(id);
+			if (!match || match.length < 4) {
+				return;
+			}
+
+			const genType = match[2];
+			const device = match[3];
+
+			const allStates = Object.values(this.stateLookup).filter(
+				sd => sd.generationType === genType && sd.device.name === device,
+			);
+			const relevantStates = allStates.filter(sd => !this.setReadOnlyStatesOnly || sd.isReadOnly);
+
+			this.log.debug(
+				`Received trigger for ${id} -> ${genType}:${device}. ${relevantStates.length} out of ${allStates.length} are relevant (read only).`,
+			);
+
+			const handleSingleState = async (sd: ioBroker.DeviceStateDefinition): Promise<void> => {
+				const currentValue = await this.getStateAsync(sd.stateFqn);
+				const valueGen = sd.valueGenerator ?? getFallbackValueGenerator();
+				const nextValue = valueGen(sd, currentValue?.val);
+
+				await this.setState(sd.stateFqn, { val: nextValue, ack: true });
+			};
+
+			await Promise.all(relevantStates.map(handleSingleState));
+
+			// ACK
+			await this.setState(id, state, true);
+			this.log.debug(`Trigger processed in ${Date.now() - startMs}ms.`);
+		}
+
+		if (this.deviceStateChangeRegex.test(id)) {
+			this.log.debug(`Received state change for device ${id}.`);
+			await this.setState(id, state, true);
+		}
+	}
 
 	private async onMessage(message: ioBroker.Message): Promise<void> {
 		if (!this.validCommands.includes(message.command) || !message.callback) {
@@ -262,8 +505,8 @@ class TestDevices extends utils.Adapter {
 					common: {
 						name: stateDef.state.name,
 						type: stateDef.commonType,
-						read: stateDef.state.read ?? true,
-						write: stateDef.state.write ?? false,
+						read: stateDef.read,
+						write: stateDef.write,
 						role: stateDef.state.defaultRole,
 						unit: stateDef.state.defaultUnit,
 					},

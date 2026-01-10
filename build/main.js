@@ -61,6 +61,158 @@ const printMissingDefaultRoleMarkdown = (states) => {
   }
   console.log(output);
 };
+const printMissingValueGenerators = (statesDefsByUnit) => {
+  let output = "| Unit | Value Type | Generation | Used By |\n";
+  output += "| - | - | - |\n";
+  for (const unit of Object.keys(statesDefsByUnit).sort()) {
+    const states = statesDefsByUnit[unit];
+    const typeDefs = [...new Set(states.map((s) => s.commonType))];
+    for (const type of typeDefs.sort()) {
+      const usedBy = states.filter(
+        (s) => unit === "N/A" ? !s.state.defaultUnit : s.state.defaultUnit === unit && s.commonType === type
+      ).map((ds) => `${ds.device.name}.${ds.state.name}`);
+      output += `| ${unit} | ${type} | | ${usedBy.join(", ")} |
+`;
+    }
+  }
+  console.log(output);
+};
+const getFallbackValueGenerator = () => {
+  return (sd, _) => {
+    if (sd.commonType === "number") {
+      return Math.random();
+    }
+    if (sd.commonType === "string") {
+      return Math.random().toFixed(2);
+    }
+    if (sd.commonType === "boolean") {
+      return Math.random() > 0.5;
+    }
+    return Math.random();
+  };
+};
+const FallbackValueGenerator = (sd) => `${sd.device.name}.${sd.state.name}#${Math.random()}`;
+const getToggleBoolValueGenerator = () => {
+  return (_, val) => !val;
+};
+const getNumberRangeGenerator = (min, max, decimals) => {
+  return (_1, _2) => {
+    return Number((Math.random() * (max - min) + min).toFixed(decimals));
+  };
+};
+const getRandomNumberGenerator = () => {
+  return getNumberRangeGenerator(0, 2e4, 2);
+};
+const adjustType = (inputValueGen, convert) => {
+  return (dsd, val) => convert(inputValueGen(dsd, val));
+};
+const commonValueGenerators = [
+  { u: "%", t: "number", gen: getNumberRangeGenerator(0, 100, 2) },
+  { u: "Hz", t: "number", gen: getNumberRangeGenerator(5e3, 15e3, 0) },
+  { u: "V", t: "number", gen: getNumberRangeGenerator(80, 150, 1) },
+  { u: "W", t: "number", gen: getNumberRangeGenerator(20, 500, 0) },
+  { u: "Wh", t: "number", gen: getNumberRangeGenerator(20, 500, 0) },
+  { u: "km/h", t: "number", gen: getNumberRangeGenerator(5, 20, 2) },
+  { u: "lux", t: "number", gen: getRandomNumberGenerator() },
+  { u: "mA", t: "number", gen: getRandomNumberGenerator() },
+  { u: "mbar", t: "number", gen: getRandomNumberGenerator() },
+  { u: "sec", t: "number", gen: getNumberRangeGenerator(0, 300, 0) },
+  { u: "\xB0", t: "number", gen: getRandomNumberGenerator() },
+  /* Longitude & Latidue */
+  {
+    u: "\xB0",
+    t: "number",
+    /* d: 'location', */
+    s: ["LONGITUDE"],
+    gen: getNumberRangeGenerator(-180, 180, 5)
+  },
+  {
+    u: "\xB0",
+    t: "number",
+    /* d: 'location', */
+    s: ["LATITUDE"],
+    gen: getNumberRangeGenerator(-90, 90, 5)
+  },
+  { u: "\xB0", t: "string", gen: adjustType(getRandomNumberGenerator(), (num) => num.toFixed(2)) },
+  { u: "\xB0C", t: "number", gen: getNumberRangeGenerator(-5, 35, 1) },
+  {
+    u: "%%CUSTOM%%",
+    t: "number",
+    d: ["rgb", "rgbwSingle"],
+    s: ["RED", "GREEN", "BLUE", "WHITE"],
+    gen: getNumberRangeGenerator(0, 255, 0)
+  },
+  {
+    u: "%%CUSTOM%%",
+    t: "number",
+    d: ["rgb", "rgbwSingle"],
+    s: ["TEMPERATURE"],
+    gen: getNumberRangeGenerator(0, 1e3, 0)
+  },
+  {
+    u: "%%CUSTOM%%",
+    t: "string",
+    s: ["WORKING", "ERROR"],
+    gen: (sd, _) => sd.state.name === "WORKING" ? "YES" : "NO"
+  },
+  { u: "%%TYPE_MATCH%%", t: "number", gen: getRandomNumberGenerator(), isFallback: true },
+  { u: "%%TYPE_MATCH%%", t: "string", gen: FallbackValueGenerator, isFallback: true },
+  /* Booleans can never be fallbacks */
+  {
+    u: "%%TYPE_MATCH%%",
+    t: "boolean",
+    gen: getToggleBoolValueGenerator(),
+    isFallback: false
+  }
+];
+const getValueGeneratorRelevance = (vg) => {
+  let result = 0;
+  if (vg.u !== "%%CUSTOM%%" && vg.u !== "%%TYPE_MATCH%%") {
+    result += 2;
+  }
+  if (vg.d) {
+    result += 3;
+  }
+  if (vg.s) {
+    result += 1;
+  }
+  return result;
+};
+const getValueGenerator = (stateDefinition) => {
+  const logFallback = (sd, vg) => {
+    if (!vg.isFallback) {
+      return;
+    }
+    console.log(`Warning: Fallback used for ${sd.device.name}:${sd.state.name} (${sd.commonType}).`);
+  };
+  const exactGeneratorMatches = commonValueGenerators.filter(
+    (vgDef) => vgDef.u === stateDefinition.state.defaultUnit && vgDef.t === stateDefinition.commonType && (vgDef.d === void 0 || vgDef.d.includes(stateDefinition.device.name)) && (vgDef.s === void 0 || vgDef.s.includes(stateDefinition.state.name))
+  );
+  if (exactGeneratorMatches.length === 1) {
+    logFallback(stateDefinition, exactGeneratorMatches[0]);
+    return exactGeneratorMatches[0].gen;
+  } else if (exactGeneratorMatches.length > 1) {
+    const genWithHighestSpecification = exactGeneratorMatches.sort(
+      (a, b) => getValueGeneratorRelevance(b) - getValueGeneratorRelevance(a)
+    );
+    return genWithHighestSpecification[0].gen;
+  }
+  const customMatches = commonValueGenerators.filter(
+    (vgDef) => vgDef.u === "%%CUSTOM%%" && vgDef.t === stateDefinition.commonType && (vgDef.d === void 0 || vgDef.d.includes(stateDefinition.device.name)) && (vgDef.s === void 0 || vgDef.s.includes(stateDefinition.state.name))
+  );
+  if (customMatches.length === 1) {
+    logFallback(stateDefinition, customMatches[0]);
+    return customMatches[0].gen;
+  }
+  const typeMatches = commonValueGenerators.filter(
+    (vgDef) => vgDef.u === "%%TYPE_MATCH%%" && vgDef.t === stateDefinition.commonType
+  );
+  if (typeMatches.length === 1) {
+    logFallback(stateDefinition, typeMatches[0]);
+    return typeMatches[0].gen;
+  }
+  return void 0;
+};
 class TestDevices extends utils.Adapter {
   static deviceFolderName = "devices";
   static triggerFolderName = "triggers";
@@ -68,13 +220,13 @@ class TestDevices extends utils.Adapter {
   stateLookup;
   stateNames = [];
   constructor(options = {}) {
-    var _a;
     super({
       ...options,
       name: "test-devices"
     });
     this.on("message", this.onMessage.bind(this));
     this.on("ready", this.onReady.bind(this));
+    this.on("stateChange", this.onStateChange.bind(this));
     this.on("unload", this.onUnload.bind(this));
     const startMs = Date.now();
     const allDevices = getDeviceMetadata();
@@ -85,11 +237,9 @@ class TestDevices extends utils.Adapter {
     this.stateLookup = this.createDesiredStateDefinitions(this.validDevices);
     this.stateNames = Object.keys(this.stateLookup);
     this.logLater(`Discovering desired states took ${Date.now() - startMs}ms.`);
-    const statesToSimulateChanges = Object.values(
-      this.stateLookup
-    ).filter((s) => s.isReadOnly).filter((s) => s.commonType !== "boolean" && s.commonType !== "string").reduce((prev, curr) => {
-      var _a2;
-      const unitSafe = (_a2 = curr.state.defaultUnit) != null ? _a2 : "N/A";
+    const missingValueGenerators = Object.values(this.stateLookup).filter((s) => s.isReadOnly).filter((s) => !getValueGenerator(s)).reduce((prev, curr) => {
+      var _a;
+      const unitSafe = (_a = curr.state.defaultUnit) != null ? _a : "N/A";
       if (Object.hasOwnProperty.call(prev, unitSafe)) {
         prev[unitSafe].push(curr);
       } else {
@@ -97,16 +247,16 @@ class TestDevices extends utils.Adapter {
       }
       return prev;
     }, {});
-    this.logLater("Default Units discovered:");
-    for (const unit of Object.entries(statesToSimulateChanges)) {
-      this.logLater(`[${unit[0]}] ${unit[1].length} entries`);
+    if (Object.keys(missingValueGenerators).length > 0) {
+      this.logLater(`There are missing value generators.`);
+      printMissingValueGenerators(missingValueGenerators);
     }
-    const missingValueGenerators = ((_a = statesToSimulateChanges["N/A"]) != null ? _a : []).map(
-      (stateDef) => `${stateDef.commonType}.${stateDef.state.name}`
-    );
-    this.logLater(
-      `The follow value generators for read only states are missing: [${missingValueGenerators.join(", ")}]. They will produce completely random values.`
-    );
+    const triggerChangeRegex = `^${this.namespace.replace(".", "\\.")}\\.${TestDevices.GetTriggerFolderName()}\\.((${generationTypes.join("|")})\\.([^\\.]*))$`;
+    this.logLater(`Constructed trigger change regex: ${triggerChangeRegex}`);
+    const deviceChangeRegex = `^${this.namespace}\\.${TestDevices.GetDeviceFolderName()}\\.(${generationTypes.join("|")})\\.([^\\.]*)\\.([^\\.]*)$`;
+    this.logLater(`Constructed device change regex: ${deviceChangeRegex}`);
+    this.triggerChangeRegex = new RegExp(triggerChangeRegex);
+    this.deviceStateChangeRegex = new RegExp(deviceChangeRegex);
   }
   createDesiredStateDefinitions(validDevices) {
     const getDeviceType = (genType) => `${this.namespace}.${TestDevices.GetDeviceFolderName()}.${genType}`;
@@ -124,14 +274,26 @@ class TestDevices extends utils.Adapter {
       deviceType: getDeviceType(m.generationType),
       deviceRoot: getDeviceRoot(m.generationType, m.device)
     })).map(
-      (m) => m.device.states.filter((s) => deviceFilter[m.generationType](m.context, s)).map((s) => ({
-        ...m,
-        state: s,
-        stateFqn: `${m.deviceRoot}.${s.name}`,
-        commonType: getStateType(s),
-        isReadOnly: isReadOnly(s)
-      }))
-    ).reduce((prev, curr) => [...prev, ...curr], []);
+      (m) => m.device.states.filter((s) => deviceFilter[m.generationType](m.context, s)).map((s) => {
+        var _a, _b;
+        return {
+          ...m,
+          state: s,
+          read: (_a = s.read) != null ? _a : true,
+          write: (_b = s.write) != null ? _b : false,
+          stateFqn: `${m.deviceRoot}.${s.name}`,
+          commonType: getStateType(s),
+          isReadOnly: isReadOnly(s),
+          valueGenerator: void 0
+        };
+      })
+    ).reduce((prev, curr) => [...prev, ...curr], []).map((sd) => {
+      var _a;
+      return {
+        ...sd,
+        valueGenerator: (_a = getValueGenerator(sd)) != null ? _a : getFallbackValueGenerator()
+      };
+    });
     return stateCacheMemory.reduce((prev, curr) => ({ ...prev, [curr.stateFqn]: curr }), {});
   }
   static GetDeviceFolderName() {
@@ -166,8 +328,48 @@ class TestDevices extends utils.Adapter {
     this.log.info(`Stored state count: ${this.stateNames.length}.`);
     this.setConnected(true);
     this.log.info(`Start-up finished within ${Date.now() - startMs}ms.`);
+    this.subscribeStates(`${this.namespace}.*`);
   }
   validCommands = ["VERIFY_DEVICE_TYPE", "GET_DEVICE_STATES"];
+  triggerChangeRegex;
+  deviceStateChangeRegex;
+  setReadOnlyStatesOnly = false;
+  // TODO OMA 2026-01-10: Read from config?
+  async onStateChange(id, state) {
+    if (!state || state.ack) {
+      return;
+    }
+    if (this.triggerChangeRegex.test(id)) {
+      const startMs = Date.now();
+      const match = this.triggerChangeRegex.exec(id);
+      if (!match || match.length < 4) {
+        return;
+      }
+      const genType = match[2];
+      const device = match[3];
+      const allStates = Object.values(this.stateLookup).filter(
+        (sd) => sd.generationType === genType && sd.device.name === device
+      );
+      const relevantStates = allStates.filter((sd) => !this.setReadOnlyStatesOnly || sd.isReadOnly);
+      this.log.debug(
+        `Received trigger for ${id} -> ${genType}:${device}. ${relevantStates.length} out of ${allStates.length} are relevant (read only).`
+      );
+      const handleSingleState = async (sd) => {
+        var _a;
+        const currentValue = await this.getStateAsync(sd.stateFqn);
+        const valueGen = (_a = sd.valueGenerator) != null ? _a : getFallbackValueGenerator();
+        const nextValue = valueGen(sd, currentValue == null ? void 0 : currentValue.val);
+        await this.setState(sd.stateFqn, { val: nextValue, ack: true });
+      };
+      await Promise.all(relevantStates.map(handleSingleState));
+      await this.setState(id, state, true);
+      this.log.debug(`Trigger processed in ${Date.now() - startMs}ms.`);
+    }
+    if (this.deviceStateChangeRegex.test(id)) {
+      this.log.debug(`Received state change for device ${id}.`);
+      await this.setState(id, state, true);
+    }
+  }
   async onMessage(message) {
     if (!this.validCommands.includes(message.command) || !message.callback) {
       this.log.info(`Dropping unknown command '${message.command}'.`);
@@ -211,20 +413,17 @@ class TestDevices extends utils.Adapter {
     const sem = new Semaphore(16);
     const allPromises = Object.values(this.stateLookup).map(
       (stateDef) => sem.with(
-        () => {
-          var _a, _b;
-          return this.extendObject(stateDef.stateFqn, {
-            type: "state",
-            common: {
-              name: stateDef.state.name,
-              type: stateDef.commonType,
-              read: (_a = stateDef.state.read) != null ? _a : true,
-              write: (_b = stateDef.state.write) != null ? _b : false,
-              role: stateDef.state.defaultRole,
-              unit: stateDef.state.defaultUnit
-            }
-          });
-        }
+        () => this.extendObject(stateDef.stateFqn, {
+          type: "state",
+          common: {
+            name: stateDef.state.name,
+            type: stateDef.commonType,
+            read: stateDef.read,
+            write: stateDef.write,
+            role: stateDef.state.defaultRole,
+            unit: stateDef.state.defaultUnit
+          }
+        })
       )
     );
     await Promise.all(allPromises);
