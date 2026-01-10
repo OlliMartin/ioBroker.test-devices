@@ -1,47 +1,11 @@
 import * as utils from '@iobroker/adapter-core';
-import ChannelDetector, { type DetectOptions, type ExternalDetectorState, type Types } from '@iobroker/type-detector';
+import ChannelDetector, { type DetectOptions, type ExternalDetectorState } from '@iobroker/type-detector';
 
-type DeviceDefinition = {
-	states: ExternalDetectorState[];
-	type: Types;
-	enumRequired?: boolean;
-	name: string;
-};
-
-type StateWithDeviceRef = ExternalDetectorState & {
-	deviceRef: DeviceDefinition;
-};
-
-// Not used for now; May be handy in the future.
-interface DeviceFilterContext {
-	device: DeviceDefinition;
-}
-
-interface DeviceStateDefinition {
-	state: ExternalDetectorState;
-	stateFqn: string;
-	context: DeviceFilterContext;
-	deviceType: string;
-	deviceRoot: string;
-	generationType: DeviceStatesGenerationType;
-	device: DeviceDefinition;
-	commonType: ioBroker.CommonType;
-}
-
-type DeviceStatesGenerationType = 'all' | 'required';
-
-// Heck, I can't get typescript to enfoce that the array here consists of all properties of the type.
+// Heck, I can't get typescript to enforce that the array here consists of all properties of the type.
 // If a new type is introduced one line above, it must be added here too :/
-const generationTypes: GenerationTypes = ['all', 'required'];
+const generationTypes: ioBroker.GenerationTypes = ['all', 'required'];
 
-type GenerationTypes = readonly DeviceStatesGenerationType[];
-
-type DeviceFilterType = Record<
-	DeviceStatesGenerationType,
-	(ctx: DeviceFilterContext, state: ExternalDetectorState) => boolean
->;
-
-const deviceFilter: DeviceFilterType = {
+const deviceFilter: ioBroker.DeviceFilterType = {
 	all: (_1, _2) => true,
 	required: (_, s) => !!s.required,
 };
@@ -50,7 +14,7 @@ const detector: ChannelDetector = new ChannelDetector();
 
 const deviceTypeBlacklist: string[] = ['chart'];
 
-const getDeviceMetadata: () => DeviceDefinition[] = () => {
+const getDeviceMetadata: () => ioBroker.DeviceDefinition[] = () => {
 	const knownPatterns = ChannelDetector.getPatterns();
 
 	return Object.entries(knownPatterns)
@@ -76,7 +40,7 @@ const crossProduct = <A, B>(as: readonly A[], bs: readonly B[]): Array<readonly 
 	return result;
 };
 
-const printMissingDefaultRoleMarkdown = (states: StateWithDeviceRef[]): void => {
+const printMissingDefaultRoleMarkdown = (states: ioBroker.StateWithDeviceRef[]): void => {
 	const sortedStates = [...states] // Assuming sort is stable.
 		.sort((a, b) => a.name.localeCompare(b.name))
 		.sort((a, b) => a.deviceRef.name.localeCompare(b.deviceRef.name));
@@ -96,8 +60,8 @@ class TestDevices extends utils.Adapter {
 	private static deviceFolderName: string = 'devices';
 	private static triggerFolderName: string = 'triggers';
 
-	private readonly validDevices: DeviceDefinition[];
-	private readonly stateLookup: Record<string, DeviceStateDefinition>;
+	private readonly validDevices: ioBroker.DeviceDefinition[];
+	private readonly stateLookup: Record<string, ioBroker.DeviceStateDefinition>;
 
 	private readonly stateNames: string[] = [];
 
@@ -124,20 +88,57 @@ class TestDevices extends utils.Adapter {
 		this.stateNames = Object.keys(this.stateLookup);
 
 		this.logLater(`Discovering desired states took ${Date.now() - startMs}ms.`);
+
+		const statesToSimulateChanges: Record<string, ioBroker.DeviceStateDefinition[]> = Object.values(
+			this.stateLookup,
+		)
+			.filter(s => s.isReadOnly)
+			.filter(s => s.commonType !== 'boolean' && s.commonType !== 'string')
+			.reduce((prev: Record<string, ioBroker.DeviceStateDefinition[]>, curr) => {
+				const unitSafe = curr.state.defaultUnit ?? 'N/A';
+
+				if (Object.hasOwnProperty.call(prev, unitSafe)) {
+					prev[unitSafe].push(curr);
+				} else {
+					prev[unitSafe] = [curr];
+				}
+
+				return prev;
+			}, {});
+
+		this.logLater('Default Units discovered:');
+		for (const unit of Object.entries(statesToSimulateChanges)) {
+			this.logLater(`[${unit[0]}] ${unit[1].length} entries`);
+		}
+
+		const missingValueGenerators = (statesToSimulateChanges['N/A'] ?? []).map(
+			stateDef => `${stateDef.commonType}.${stateDef.state.name}`,
+		);
+
+		this.logLater(
+			`The follow value generators for read only states are missing: [${missingValueGenerators.join(', ')}]. They will produce completely random values.`,
+		);
 	}
 
-	private createDesiredStateDefinitions(validDevices: DeviceDefinition[]): Record<string, DeviceStateDefinition> {
-		const getDeviceType = (genType: DeviceStatesGenerationType): string =>
+	private createDesiredStateDefinitions(
+		validDevices: ioBroker.DeviceDefinition[],
+	): Record<string, ioBroker.DeviceStateDefinition> {
+		const getDeviceType = (genType: ioBroker.DeviceStatesGenerationType): string =>
 			`${this.namespace}.${TestDevices.GetDeviceFolderName()}.${genType}`;
-		const getDeviceRoot = (genType: DeviceStatesGenerationType, device: DeviceDefinition): string =>
-			`${getDeviceType(genType)}.${device.name}`;
+		const getDeviceRoot = (
+			genType: ioBroker.DeviceStatesGenerationType,
+			device: ioBroker.DeviceDefinition,
+		): string => `${getDeviceType(genType)}.${device.name}`;
 
 		// 'NoOp' for now
-		const getFilterContext = (device: DeviceDefinition): DeviceFilterContext => {
-			return { device };
+		const getFilterContext = (device: ioBroker.DeviceDefinition): ioBroker.DeviceFilterContext => {
+			return { device, config: this.config };
 		};
 
-		const stateCacheMemory: DeviceStateDefinition[] = crossProduct(generationTypes, validDevices)
+		const isReadOnly = (state: ExternalDetectorState): boolean =>
+			(!!state.read || state.read === undefined) && !state.write;
+
+		const stateCacheMemory: ioBroker.DeviceStateDefinition[] = crossProduct(generationTypes, validDevices)
 			.map(arr => ({
 				generationType: arr[0],
 				device: arr[1],
@@ -151,7 +152,13 @@ class TestDevices extends utils.Adapter {
 			.map(m =>
 				m.device.states
 					.filter(s => deviceFilter[m.generationType](m.context, s))
-					.map(s => ({ ...m, state: s, stateFqn: `${m.deviceRoot}.${s.name}`, commonType: getStateType(s) })),
+					.map(s => ({
+						...m,
+						state: s,
+						stateFqn: `${m.deviceRoot}.${s.name}`,
+						commonType: getStateType(s),
+						isReadOnly: isReadOnly(s),
+					})),
 			)
 			.reduce((prev, curr) => [...prev, ...curr], []);
 
@@ -190,6 +197,8 @@ class TestDevices extends utils.Adapter {
 				`Actual device states deviate from desired state. Want: ${this.stateNames.length} Have: ${foundInDb.length}. Recreating all.`,
 			);
 			await this.createAllDevicesAsync(this.validDevices);
+			this.objectCache = null; // Force cache reload for good measure
+			void this.getObjectsCachedAsync();
 		}
 
 		this.log.info(`Stored state count: ${this.stateNames.length}.`);
@@ -241,7 +250,7 @@ class TestDevices extends utils.Adapter {
 		]);
 	}
 
-	private async createAllDevicesAsync(validDevices: DeviceDefinition[]): Promise<void> {
+	private async createAllDevicesAsync(validDevices: ioBroker.DeviceDefinition[]): Promise<void> {
 		const startMs = Date.now();
 		this.log.debug(`Creating ${this.stateNames.length} states for ${validDevices.length} devices`);
 		const sem = new Semaphore(16);
@@ -268,15 +277,15 @@ class TestDevices extends utils.Adapter {
 		);
 	}
 
-	private async createMetaStatesForDevicesAsync(devices: DeviceDefinition[]): Promise<void> {
+	private async createMetaStatesForDevicesAsync(devices: ioBroker.DeviceDefinition[]): Promise<void> {
 		await Promise.all(
 			crossProduct(generationTypes, devices).map(d => this.createMetaStatesForDeviceAsync(d[1], d[0])),
 		);
 	}
 
 	private async createMetaStatesForDeviceAsync(
-		device: DeviceDefinition,
-		prefix: DeviceStatesGenerationType,
+		device: ioBroker.DeviceDefinition,
+		prefix: ioBroker.DeviceStatesGenerationType,
 	): Promise<void> {
 		const deviceType = `${this.namespace}.${TestDevices.GetDeviceFolderName()}.${prefix}`;
 		await this.extendObject(deviceType, {
@@ -295,7 +304,7 @@ class TestDevices extends utils.Adapter {
 		});
 	}
 
-	private async createDeviceChangeTriggersAsync(validDevices: DeviceDefinition[]): Promise<void> {
+	private async createDeviceChangeTriggersAsync(validDevices: ioBroker.DeviceDefinition[]): Promise<void> {
 		this.log.debug(`Creating triggers for ${validDevices.length} devices`);
 
 		const startMs = Date.now();
@@ -324,9 +333,9 @@ class TestDevices extends utils.Adapter {
 	}
 
 	private async createOrUpdateSingleDeviceTriggerAsync(
-		device: DeviceDefinition,
+		device: ioBroker.DeviceDefinition,
 		folderName: string,
-		prefix: DeviceStatesGenerationType,
+		prefix: ioBroker.DeviceStatesGenerationType,
 	): Promise<void> {
 		const deviceType = `${this.namespace}.${folderName}.${prefix}.${device.name}`;
 		await this.extendObject(deviceType, {
@@ -350,19 +359,25 @@ class TestDevices extends utils.Adapter {
 		}
 
 		this.objectsLastRead = Date.now();
-		this.objectCache = await this.getForeignObjects(`${this.namespace}.${TestDevices.GetDeviceFolderName()}.*`);
+		const objResult = await this.getForeignObjects(`${this.namespace}.${TestDevices.GetDeviceFolderName()}.*`);
 
-		this.log.debug(
-			`Read ${Object.keys(this.objectCache).length} objects in ${Date.now() - this.objectsLastRead}ms.`,
-		);
+		this.log.debug(`Read ${Object.keys(objResult).length} objects in ${Date.now() - this.objectsLastRead}ms.`);
 
-		return this.objectCache;
+		// Heh, this is a very subtle thing, but has quite a big impact on the integration tests:
+		// Right now objects are pre-loaded on adapter start, if it is the first start (always the case in int-tests),
+		// we get an empty array, which would be cached for a minute.
+		// -> only write to cache if we find objects & invalidate cache on state creation.
+		if (Object.keys(objResult).length > 0) {
+			this.objectCache = objResult;
+		}
+
+		return objResult;
 	}
 
 	private async verifyCreatedDeviceAsync(deviceType: string): Promise<boolean> {
 		const objects = await this.getObjectsCachedAsync();
 
-		const deviceGenerationTypes: DeviceStatesGenerationType[] = ['all', 'required'];
+		const deviceGenerationTypes: ioBroker.DeviceStatesGenerationType[] = ['all', 'required'];
 
 		let result = true;
 		for (const generationType of deviceGenerationTypes) {
@@ -401,7 +416,7 @@ class TestDevices extends utils.Adapter {
 		try {
 			this.setConnected(false);
 		} catch (error) {
-			this.log.error(`Error during unloading: ${(error as Error).message}`);
+			this.log.error(`Unexpected error during unloading: ${(error as Error).message}`);
 		} finally {
 			callback();
 		}
@@ -412,14 +427,14 @@ class TestDevices extends utils.Adapter {
 		this.logMessages.push(message);
 	}
 
-	private analyzeAllStates(allDevices: DeviceDefinition[]): void {
-		const mapState: (device: DeviceDefinition, state: ExternalDetectorState) => StateWithDeviceRef = (
-			device,
-			state,
-		) => ({ ...state, deviceRef: device });
+	private analyzeAllStates(allDevices: ioBroker.DeviceDefinition[]): void {
+		const mapState: (
+			device: ioBroker.DeviceDefinition,
+			state: ExternalDetectorState,
+		) => ioBroker.StateWithDeviceRef = (device, state) => ({ ...state, deviceRef: device });
 
 		const allStates = allDevices.reduce(
-			(prev: StateWithDeviceRef[], curr) => [...prev, ...curr.states.map(s => mapState(curr, s))],
+			(prev: ioBroker.StateWithDeviceRef[], curr) => [...prev, ...curr.states.map(s => mapState(curr, s))],
 			[],
 		);
 
@@ -436,7 +451,7 @@ class TestDevices extends utils.Adapter {
 		}
 	}
 
-	private analyzeDuplicateDefaultRoles(allDevices: DeviceDefinition[]): void {
+	private analyzeDuplicateDefaultRoles(allDevices: ioBroker.DeviceDefinition[]): void {
 		const isDuplicatedDefaultRole = (state: ExternalDetectorState, allStates: ExternalDetectorState[]): boolean => {
 			return allStates.filter(sInner => sInner.defaultRole == state.defaultRole).length > 1;
 		};
@@ -463,7 +478,7 @@ class TestDevices extends utils.Adapter {
 		}
 	}
 
-	private getDeviceNamesMissingDefaultRoles(allDevices: DeviceDefinition[]): string[] {
+	private getDeviceNamesMissingDefaultRoles(allDevices: ioBroker.DeviceDefinition[]): string[] {
 		const devicesWithMissingDefaultRoles = allDevices.filter(
 			d => d.states.filter(s => s.required && !s.defaultRole).length > 0,
 		);

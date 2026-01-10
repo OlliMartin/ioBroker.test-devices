@@ -68,6 +68,7 @@ class TestDevices extends utils.Adapter {
   stateLookup;
   stateNames = [];
   constructor(options = {}) {
+    var _a;
     super({
       ...options,
       name: "test-devices"
@@ -84,13 +85,36 @@ class TestDevices extends utils.Adapter {
     this.stateLookup = this.createDesiredStateDefinitions(this.validDevices);
     this.stateNames = Object.keys(this.stateLookup);
     this.logLater(`Discovering desired states took ${Date.now() - startMs}ms.`);
+    const statesToSimulateChanges = Object.values(
+      this.stateLookup
+    ).filter((s) => s.isReadOnly).filter((s) => s.commonType !== "boolean" && s.commonType !== "string").reduce((prev, curr) => {
+      var _a2;
+      const unitSafe = (_a2 = curr.state.defaultUnit) != null ? _a2 : "N/A";
+      if (Object.hasOwnProperty.call(prev, unitSafe)) {
+        prev[unitSafe].push(curr);
+      } else {
+        prev[unitSafe] = [curr];
+      }
+      return prev;
+    }, {});
+    this.logLater("Default Units discovered:");
+    for (const unit of Object.entries(statesToSimulateChanges)) {
+      this.logLater(`[${unit[0]}] ${unit[1].length} entries`);
+    }
+    const missingValueGenerators = ((_a = statesToSimulateChanges["N/A"]) != null ? _a : []).map(
+      (stateDef) => `${stateDef.commonType}.${stateDef.state.name}`
+    );
+    this.logLater(
+      `The follow value generators for read only states are missing: [${missingValueGenerators.join(", ")}]. They will produce completely random values.`
+    );
   }
   createDesiredStateDefinitions(validDevices) {
     const getDeviceType = (genType) => `${this.namespace}.${TestDevices.GetDeviceFolderName()}.${genType}`;
     const getDeviceRoot = (genType, device) => `${getDeviceType(genType)}.${device.name}`;
     const getFilterContext = (device) => {
-      return { device };
+      return { device, config: this.config };
     };
+    const isReadOnly = (state) => (!!state.read || state.read === void 0) && !state.write;
     const stateCacheMemory = crossProduct(generationTypes, validDevices).map((arr) => ({
       generationType: arr[0],
       device: arr[1]
@@ -100,7 +124,13 @@ class TestDevices extends utils.Adapter {
       deviceType: getDeviceType(m.generationType),
       deviceRoot: getDeviceRoot(m.generationType, m.device)
     })).map(
-      (m) => m.device.states.filter((s) => deviceFilter[m.generationType](m.context, s)).map((s) => ({ ...m, state: s, stateFqn: `${m.deviceRoot}.${s.name}`, commonType: getStateType(s) }))
+      (m) => m.device.states.filter((s) => deviceFilter[m.generationType](m.context, s)).map((s) => ({
+        ...m,
+        state: s,
+        stateFqn: `${m.deviceRoot}.${s.name}`,
+        commonType: getStateType(s),
+        isReadOnly: isReadOnly(s)
+      }))
     ).reduce((prev, curr) => [...prev, ...curr], []);
     return stateCacheMemory.reduce((prev, curr) => ({ ...prev, [curr.stateFqn]: curr }), {});
   }
@@ -130,6 +160,8 @@ class TestDevices extends utils.Adapter {
         `Actual device states deviate from desired state. Want: ${this.stateNames.length} Have: ${foundInDb.length}. Recreating all.`
       );
       await this.createAllDevicesAsync(this.validDevices);
+      this.objectCache = null;
+      void this.getObjectsCachedAsync();
     }
     this.log.info(`Stored state count: ${this.stateNames.length}.`);
     this.setConnected(true);
@@ -264,11 +296,12 @@ class TestDevices extends utils.Adapter {
       return this.objectCache;
     }
     this.objectsLastRead = Date.now();
-    this.objectCache = await this.getForeignObjects(`${this.namespace}.${TestDevices.GetDeviceFolderName()}.*`);
-    this.log.debug(
-      `Read ${Object.keys(this.objectCache).length} objects in ${Date.now() - this.objectsLastRead}ms.`
-    );
-    return this.objectCache;
+    const objResult = await this.getForeignObjects(`${this.namespace}.${TestDevices.GetDeviceFolderName()}.*`);
+    this.log.debug(`Read ${Object.keys(objResult).length} objects in ${Date.now() - this.objectsLastRead}ms.`);
+    if (Object.keys(objResult).length > 0) {
+      this.objectCache = objResult;
+    }
+    return objResult;
   }
   async verifyCreatedDeviceAsync(deviceType) {
     const objects = await this.getObjectsCachedAsync();
@@ -302,7 +335,7 @@ class TestDevices extends utils.Adapter {
     try {
       this.setConnected(false);
     } catch (error) {
-      this.log.error(`Error during unloading: ${error.message}`);
+      this.log.error(`Unexpected error during unloading: ${error.message}`);
     } finally {
       callback();
     }
