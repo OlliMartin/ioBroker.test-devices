@@ -34,7 +34,7 @@ const getNumberRangeGenerator = (min: number, max: number, decimals: number): io
 export const NumberRange = (min: number, max: number, decimals: number): ioBroker.ValueGeneratorResult<number> => {
 	return {
 		gen: getNumberRangeGenerator(min, max, decimals),
-		description: `Num[${min}..${max}|P${decimals}]`,
+		description: `Num[${min}..${max}#P${decimals}]`,
 	};
 };
 

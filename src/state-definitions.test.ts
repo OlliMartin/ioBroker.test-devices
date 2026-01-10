@@ -86,7 +86,7 @@ The value generators follow this structure in their typescript definition:
 \`\`\`
 
 There are a few wrappers available:
-- \`NumberRange($min, $max, $decimalPlaces)\` - Generates the next number randomly in the provided range. In a description this wrapper has the form: Num[$min..$max|P$decimalPlaces]
+- \`NumberRange($min, $max, $decimalPlaces)\` - Generates the next number randomly in the provided range. In a description this wrapper has the form: Num[$min..$max#P$decimalPlaces]
 - \`RandomNumber\` - This wrapper indicates that a state is not yet properly handled and should be changed
 - \`Toggle\` - This is the default value generator for \`boolean\` states. It toggles the value 
 
