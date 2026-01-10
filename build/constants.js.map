@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../src/constants.ts"],
+  "sourcesContent": ["export const GetDeviceFolderName = (): string => {\n\treturn 'devices';\n};\n\nexport const GetTriggerFolderName = (): string => {\n\treturn 'triggers';\n};\n\n// Heck, I can't get typescript to enforce that the array here consists of all properties of the type.\n// If a new type is introduced, it must be added here too :/\nexport const generationTypes: ioBroker.GenerationTypes = ['all', 'required'];\n\nexport const deviceFilter: ioBroker.DeviceFilterType = {\n\tall: (_1, _2) => true,\n\trequired: (_, s) => !!s.required,\n};\n\nexport const UNIT__CUSTOM = '%%CUSTOM%%';\nexport const UNIT__TYPE_MATCH = '%%TYPE_MATCH%%';\n"],
+  "mappings": ";;;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAO,MAAM,sBAAsB,MAAc;AAChD,SAAO;AACR;AAEO,MAAM,uBAAuB,MAAc;AACjD,SAAO;AACR;AAIO,MAAM,kBAA4C,CAAC,OAAO,UAAU;AAEpE,MAAM,eAA0C;AAAA,EACtD,KAAK,CAAC,IAAI,OAAO;AAAA,EACjB,UAAU,CAAC,GAAG,MAAM,CAAC,CAAC,EAAE;AACzB;AAEO,MAAM,eAAe;AACrB,MAAM,mBAAmB;",
+  "names": []
+}
