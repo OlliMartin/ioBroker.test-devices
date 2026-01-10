@@ -142,7 +142,6 @@ const commonValueGenerators = [
   {
     u: "ms",
     t: "number",
-    d: ["cie", "ct", "dimmer", "hue", "rgb", "rgbSingle", "rgbwSingle"],
     s: ["TRANSITION_TIME"],
     ...(0, import_value_generators.NumberRange)(0, 1e4, 0)
   },

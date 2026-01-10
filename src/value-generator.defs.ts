@@ -134,7 +134,6 @@ export const commonValueGenerators: ioBroker.ValueGeneratorDefinition[] = [
 	{
 		u: 'ms',
 		t: 'number',
-		d: ['cie', 'ct', 'dimmer', 'hue', 'rgb', 'rgbSingle', 'rgbwSingle'],
 		s: ['TRANSITION_TIME'],
 		...NumberRange(0, 10000, 0),
 	},
