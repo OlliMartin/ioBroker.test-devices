@@ -6,7 +6,8 @@
  */
 
 import { expect } from 'chai';
-import { getDeviceMetadata, createDesiredStateDefinitions } from './main';
+import { getDeviceMetadata } from './device-metadata';
+import { createDesiredStateDefinitions } from './state-definitions';
 
 describe('createDesiredStateDefinitions', () => {
 	let deviceMetadata: ioBroker.DeviceDefinition[];
@@ -18,6 +19,6 @@ describe('createDesiredStateDefinitions', () => {
 	it(`should not fall back value generators`, () => {
 		const stateDefinitions = createDesiredStateDefinitions('test-devices.0', {}, deviceMetadata);
 
-		expect(stateDefinitions.length).to.be.greaterThan(0);
+		expect(Object.keys(stateDefinitions).length).to.be.greaterThan(0);
 	});
 });

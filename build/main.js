@@ -5,10 +5,6 @@ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __export = (target, all) => {
-  for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
-};
 var __copyProps = (to, from, except, desc) => {
   if (from && typeof from === "object" || typeof from === "function") {
     for (let key of __getOwnPropNames(from))
@@ -25,230 +21,25 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
   mod
 ));
-var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
-var main_exports = {};
-__export(main_exports, {
-  createDesiredStateDefinitions: () => createDesiredStateDefinitions,
-  getDeviceMetadata: () => getDeviceMetadata
-});
-module.exports = __toCommonJS(main_exports);
 var utils = __toESM(require("@iobroker/adapter-core"));
 var import_type_detector = __toESM(require("@iobroker/type-detector"));
-const generationTypes = ["all", "required"];
-const deviceFilter = {
-  all: (_1, _2) => true,
-  required: (_, s) => !!s.required
-};
+var import_device_metadata = require("./device-metadata");
+var import_utils = require("./utils");
+var import_state_definitions = require("./state-definitions");
+var import_constants = require("./constants");
+var import_value_generator = require("./value-generator.defs");
 const detector = new import_type_detector.default();
-const deviceTypeBlacklist = ["chart"];
-const getDeviceMetadata = () => {
-  const knownPatterns = import_type_detector.default.getPatterns();
-  return Object.entries(knownPatterns).filter(([k, _]) => !deviceTypeBlacklist.includes(k)).map(([k, v]) => ({
-    ...v,
-    states: v.states.filter((s) => !!s.defaultRole),
-    name: k
-  }));
-};
-const getStateType = (state, fallback) => {
-  var _a, _b;
-  return Array.isArray(state.type) ? state.type[0] : (_b = (_a = state.type) != null ? _a : fallback) != null ? _b : "string";
-};
-const crossProduct = (as, bs) => {
-  const result = [];
-  for (const a of as) {
-    for (const b of bs) {
-      result.push([a, b]);
-    }
-  }
-  return result;
-};
 const printMissingDefaultRoleMarkdown = (states) => {
   const sortedStates = [...states].sort((a, b) => a.name.localeCompare(b.name)).sort((a, b) => a.deviceRef.name.localeCompare(b.deviceRef.name));
   let output = "| Device | Name | Type | Role Regex |\n";
   output += "| - | - | - | - |\n";
   for (const state of sortedStates) {
-    output += `| ${state.deviceRef.name} | ${state.name} | ${getStateType(state, "N/A")} | \`${state.role}\` |
+    output += `| ${state.deviceRef.name} | ${state.name} | ${(0, import_utils.getStateType)(state, "N/A")} | \`${state.role}\` |
 `;
   }
   console.log(output);
 };
-const getFallbackValueGenerator = () => {
-  return (sd, _) => {
-    if (sd.commonType === "number") {
-      return Math.random();
-    }
-    if (sd.commonType === "string") {
-      return Math.random().toFixed(2);
-    }
-    if (sd.commonType === "boolean") {
-      return Math.random() > 0.5;
-    }
-    return Math.random();
-  };
-};
-const FallbackValueGenerator = (sd) => `${sd.device.name}.${sd.state.name}#${Math.random()}`;
-const getToggleBoolValueGenerator = () => {
-  return (_, val) => !val;
-};
-const getNumberRangeGenerator = (min, max, decimals) => {
-  return (_1, _2) => {
-    return Number((Math.random() * (max - min) + min).toFixed(decimals));
-  };
-};
-const getRandomNumberGenerator = () => {
-  return getNumberRangeGenerator(0, 2e4, 2);
-};
-const adjustType = (inputValueGen, convert) => {
-  return (dsd, val) => convert(inputValueGen(dsd, val));
-};
-const commonValueGenerators = [
-  { u: "%", t: "number", gen: getNumberRangeGenerator(0, 100, 2) },
-  { u: "Hz", t: "number", gen: getNumberRangeGenerator(5e3, 15e3, 0) },
-  { u: "V", t: "number", gen: getNumberRangeGenerator(80, 150, 1) },
-  { u: "W", t: "number", gen: getNumberRangeGenerator(20, 500, 0) },
-  { u: "Wh", t: "number", gen: getNumberRangeGenerator(20, 500, 0) },
-  { u: "km/h", t: "number", gen: getNumberRangeGenerator(5, 20, 2) },
-  { u: "lux", t: "number", gen: getRandomNumberGenerator() },
-  { u: "mA", t: "number", gen: getRandomNumberGenerator() },
-  { u: "mbar", t: "number", gen: getRandomNumberGenerator() },
-  { u: "sec", t: "number", gen: getNumberRangeGenerator(0, 300, 0) },
-  { u: "\xB0", t: "number", gen: getRandomNumberGenerator() },
-  /* Longitude & Latidue */
-  {
-    u: "\xB0",
-    t: "number",
-    /* d: 'location', */
-    s: ["LONGITUDE"],
-    gen: getNumberRangeGenerator(-180, 180, 5)
-  },
-  {
-    u: "\xB0",
-    t: "number",
-    /* d: 'location', */
-    s: ["LATITUDE"],
-    gen: getNumberRangeGenerator(-90, 90, 5)
-  },
-  { u: "\xB0", t: "string", gen: adjustType(getRandomNumberGenerator(), (num) => num.toFixed(2)) },
-  { u: "\xB0C", t: "number", gen: getNumberRangeGenerator(-5, 35, 1) },
-  {
-    u: "%%CUSTOM%%",
-    t: "number",
-    d: ["rgb", "rgbwSingle"],
-    s: ["RED", "GREEN", "BLUE", "WHITE"],
-    gen: getNumberRangeGenerator(0, 255, 0)
-  },
-  {
-    u: "%%CUSTOM%%",
-    t: "number",
-    d: ["rgb", "rgbwSingle"],
-    s: ["TEMPERATURE"],
-    gen: getNumberRangeGenerator(0, 1e3, 0)
-  },
-  {
-    u: "%%CUSTOM%%",
-    t: "string",
-    s: ["WORKING", "ERROR"],
-    gen: (sd, _) => sd.state.name === "WORKING" ? "YES" : "NO"
-  },
-  { u: "%%TYPE_MATCH%%", t: "number", gen: getRandomNumberGenerator(), isFallback: true },
-  { u: "%%TYPE_MATCH%%", t: "string", gen: FallbackValueGenerator, isFallback: true },
-  /* Booleans can never be fallbacks */
-  {
-    u: "%%TYPE_MATCH%%",
-    t: "boolean",
-    gen: getToggleBoolValueGenerator(),
-    isFallback: false
-  }
-];
-const getValueGeneratorRelevance = (vg) => {
-  let result = 0;
-  if (vg.u !== "%%CUSTOM%%" && vg.u !== "%%TYPE_MATCH%%") {
-    result += 2;
-  }
-  if (vg.d) {
-    result += 3;
-  }
-  if (vg.s) {
-    result += 1;
-  }
-  return result;
-};
-const getValueGenerator = (stateDefinition) => {
-  const logFallback = (sd, vg) => {
-    if (!vg.isFallback) {
-      return;
-    }
-    console.log(`Warning: Fallback used for ${sd.device.name}:${sd.state.name} (${sd.commonType}).`);
-  };
-  const exactGeneratorMatches = commonValueGenerators.filter(
-    (vgDef) => vgDef.u === stateDefinition.state.defaultUnit && vgDef.t === stateDefinition.commonType && (vgDef.d === void 0 || vgDef.d.includes(stateDefinition.device.name)) && (vgDef.s === void 0 || vgDef.s.includes(stateDefinition.state.name))
-  );
-  if (exactGeneratorMatches.length === 1) {
-    logFallback(stateDefinition, exactGeneratorMatches[0]);
-    return exactGeneratorMatches[0].gen;
-  } else if (exactGeneratorMatches.length > 1) {
-    const genWithHighestSpecification = exactGeneratorMatches.sort(
-      (a, b) => getValueGeneratorRelevance(b) - getValueGeneratorRelevance(a)
-    );
-    return genWithHighestSpecification[0].gen;
-  }
-  const customMatches = commonValueGenerators.filter(
-    (vgDef) => vgDef.u === "%%CUSTOM%%" && vgDef.t === stateDefinition.commonType && (vgDef.d === void 0 || vgDef.d.includes(stateDefinition.device.name)) && (vgDef.s === void 0 || vgDef.s.includes(stateDefinition.state.name))
-  );
-  if (customMatches.length === 1) {
-    logFallback(stateDefinition, customMatches[0]);
-    return customMatches[0].gen;
-  }
-  const typeMatches = commonValueGenerators.filter(
-    (vgDef) => vgDef.u === "%%TYPE_MATCH%%" && vgDef.t === stateDefinition.commonType
-  );
-  if (typeMatches.length === 1) {
-    logFallback(stateDefinition, typeMatches[0]);
-    return typeMatches[0].gen;
-  }
-  return void 0;
-};
-const createDesiredStateDefinitions = (namespace, config, validDevices) => {
-  const getDeviceType = (genType) => `${namespace}.${TestDevices.GetDeviceFolderName()}.${genType}`;
-  const getDeviceRoot = (genType, device) => `${getDeviceType(genType)}.${device.name}`;
-  const getFilterContext = (device) => {
-    return { device, config };
-  };
-  const isReadOnly = (state) => (!!state.read || state.read === void 0) && !state.write;
-  const stateCacheMemory = crossProduct(generationTypes, validDevices).map((arr) => ({
-    generationType: arr[0],
-    device: arr[1]
-  })).map((m) => ({
-    ...m,
-    context: getFilterContext(m.device),
-    deviceType: getDeviceType(m.generationType),
-    deviceRoot: getDeviceRoot(m.generationType, m.device)
-  })).map(
-    (m) => m.device.states.filter((s) => deviceFilter[m.generationType](m.context, s)).map((s) => {
-      var _a, _b;
-      return {
-        ...m,
-        state: s,
-        read: (_a = s.read) != null ? _a : true,
-        write: (_b = s.write) != null ? _b : false,
-        stateFqn: `${m.deviceRoot}.${s.name}`,
-        commonType: getStateType(s),
-        isReadOnly: isReadOnly(s),
-        valueGenerator: void 0
-      };
-    })
-  ).reduce((prev, curr) => [...prev, ...curr], []).map((sd) => {
-    var _a;
-    return {
-      ...sd,
-      valueGenerator: (_a = getValueGenerator(sd)) != null ? _a : getFallbackValueGenerator()
-    };
-  });
-  return stateCacheMemory.reduce((prev, curr) => ({ ...prev, [curr.stateFqn]: curr }), {});
-};
 class TestDevices extends utils.Adapter {
-  static deviceFolderName = "devices";
-  static triggerFolderName = "triggers";
   validDevices;
   stateLookup;
   stateNames = [];
@@ -262,26 +53,20 @@ class TestDevices extends utils.Adapter {
     this.on("stateChange", this.onStateChange.bind(this));
     this.on("unload", this.onUnload.bind(this));
     const startMs = Date.now();
-    const allDevices = getDeviceMetadata();
+    const allDevices = (0, import_device_metadata.getDeviceMetadata)();
     this.analyzeAllStates(allDevices);
     const deviceNamesWithMissingDefaultRoles = this.getDeviceNamesMissingDefaultRoles(allDevices);
     this.analyzeDuplicateDefaultRoles(allDevices);
     this.validDevices = allDevices.filter((d) => !deviceNamesWithMissingDefaultRoles.includes(d.name));
-    this.stateLookup = createDesiredStateDefinitions(this.namespace, this.config, this.validDevices);
+    this.stateLookup = (0, import_state_definitions.createDesiredStateDefinitions)(this.namespace, this.config, this.validDevices);
     this.stateNames = Object.keys(this.stateLookup);
     this.logLater(`Discovering desired states took ${Date.now() - startMs}ms.`);
-    const triggerChangeRegex = `^${this.namespace.replace(".", "\\.")}\\.${TestDevices.GetTriggerFolderName()}\\.((${generationTypes.join("|")})\\.([^\\.]*))$`;
+    const triggerChangeRegex = `^${this.namespace.replace(".", "\\.")}\\.${(0, import_constants.GetTriggerFolderName)()}\\.((${import_constants.generationTypes.join("|")})\\.([^\\.]*))$`;
     this.logLater(`Constructed trigger change regex: ${triggerChangeRegex}`);
-    const deviceChangeRegex = `^${this.namespace}\\.${TestDevices.GetDeviceFolderName()}\\.(${generationTypes.join("|")})\\.([^\\.]*)\\.([^\\.]*)$`;
+    const deviceChangeRegex = `^${this.namespace}\\.${(0, import_constants.GetDeviceFolderName)()}\\.(${import_constants.generationTypes.join("|")})\\.([^\\.]*)\\.([^\\.]*)$`;
     this.logLater(`Constructed device change regex: ${deviceChangeRegex}`);
     this.triggerChangeRegex = new RegExp(triggerChangeRegex);
     this.deviceStateChangeRegex = new RegExp(deviceChangeRegex);
-  }
-  static GetDeviceFolderName() {
-    return TestDevices.deviceFolderName;
-  }
-  static GetTriggerFolderName() {
-    return TestDevices.triggerFolderName;
   }
   async onReady() {
     for (const msg of this.logMessages) {
@@ -338,7 +123,7 @@ class TestDevices extends utils.Adapter {
       const handleSingleState = async (sd) => {
         var _a;
         const currentValue = await this.getStateAsync(sd.stateFqn);
-        const valueGen = (_a = sd.valueGenerator) != null ? _a : getFallbackValueGenerator();
+        const valueGen = (_a = sd.valueGenerator) != null ? _a : (0, import_value_generator.getFallbackValueGenerator)();
         const nextValue = valueGen(sd, currentValue == null ? void 0 : currentValue.val);
         await this.setState(sd.stateFqn, { val: nextValue, ack: true });
       };
@@ -371,8 +156,8 @@ class TestDevices extends utils.Adapter {
     }
   }
   async createTopLevelFoldersAsync() {
-    const fqFolderName = `${this.namespace}.${TestDevices.GetDeviceFolderName()}`;
-    const fqTriggerName = `${this.namespace}.${TestDevices.GetTriggerFolderName()}`;
+    const fqFolderName = `${this.namespace}.${(0, import_constants.GetDeviceFolderName)()}`;
+    const fqTriggerName = `${this.namespace}.${(0, import_constants.GetTriggerFolderName)()}`;
     await Promise.allSettled([
       this.extendObject(fqTriggerName, {
         type: "folder",
@@ -414,11 +199,11 @@ class TestDevices extends utils.Adapter {
   }
   async createMetaStatesForDevicesAsync(devices) {
     await Promise.all(
-      crossProduct(generationTypes, devices).map((d) => this.createMetaStatesForDeviceAsync(d[1], d[0]))
+      (0, import_utils.crossProduct)(import_constants.generationTypes, devices).map((d) => this.createMetaStatesForDeviceAsync(d[1], d[0]))
     );
   }
   async createMetaStatesForDeviceAsync(device, prefix) {
-    const deviceType = `${this.namespace}.${TestDevices.GetDeviceFolderName()}.${prefix}`;
+    const deviceType = `${this.namespace}.${(0, import_constants.GetDeviceFolderName)()}.${prefix}`;
     await this.extendObject(deviceType, {
       type: "device",
       common: {
@@ -436,8 +221,8 @@ class TestDevices extends utils.Adapter {
   async createDeviceChangeTriggersAsync(validDevices) {
     this.log.debug(`Creating triggers for ${validDevices.length} devices`);
     const startMs = Date.now();
-    const triggerFolder = `${this.namespace}.${TestDevices.GetTriggerFolderName()}`;
-    for (const generationType of generationTypes) {
+    const triggerFolder = `${this.namespace}.${(0, import_constants.GetTriggerFolderName)()}`;
+    for (const generationType of import_constants.generationTypes) {
       await this.extendObject(`${triggerFolder}.${generationType}`, {
         type: "folder",
         common: {
@@ -445,13 +230,9 @@ class TestDevices extends utils.Adapter {
         }
       });
     }
-    for (const generationType of generationTypes) {
+    for (const generationType of import_constants.generationTypes) {
       for (const device of validDevices) {
-        await this.createOrUpdateSingleDeviceTriggerAsync(
-          device,
-          TestDevices.GetTriggerFolderName(),
-          generationType
-        );
+        await this.createOrUpdateSingleDeviceTriggerAsync(device, (0, import_constants.GetTriggerFolderName)(), generationType);
       }
     }
     this.log.info(`Done. Created ${validDevices.length} device triggers in ${Date.now() - startMs}ms.`);
@@ -476,7 +257,7 @@ class TestDevices extends utils.Adapter {
       return this.objectCache;
     }
     this.objectsLastRead = Date.now();
-    const objResult = await this.getForeignObjects(`${this.namespace}.${TestDevices.GetDeviceFolderName()}.*`);
+    const objResult = await this.getForeignObjects(`${this.namespace}.${(0, import_constants.GetDeviceFolderName)()}.*`);
     this.log.debug(`Read ${Object.keys(objResult).length} objects in ${Date.now() - this.objectsLastRead}ms.`);
     if (Object.keys(objResult).length > 0) {
       this.objectCache = objResult;
@@ -488,7 +269,7 @@ class TestDevices extends utils.Adapter {
     const deviceGenerationTypes = ["all", "required"];
     let result = true;
     for (const generationType of deviceGenerationTypes) {
-      const prefix = `${this.namespace}.${TestDevices.GetDeviceFolderName()}.${generationType}`;
+      const prefix = `${this.namespace}.${(0, import_constants.GetDeviceFolderName)()}.${generationType}`;
       const expectedId = `${prefix}.${deviceType}`;
       const options = {
         objects,
@@ -623,9 +404,4 @@ if (require.main !== module) {
 } else {
   (() => new TestDevices())();
 }
-// Annotate the CommonJS export names for ESM import in node:
-0 && (module.exports = {
-  createDesiredStateDefinitions,
-  getDeviceMetadata
-});
 //# sourceMappingURL=main.js.map

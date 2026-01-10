@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../src/device-metadata.ts"],
+  "sourcesContent": ["import ChannelDetector from '@iobroker/type-detector';\n\nexport const deviceTypeBlacklist: string[] = ['chart'];\n\nexport const getDeviceMetadata: () => ioBroker.DeviceDefinition[] = () => {\n\tconst knownPatterns = ChannelDetector.getPatterns();\n\n\treturn Object.entries(knownPatterns)\n\t\t.filter(([k, _]) => !deviceTypeBlacklist.includes(k))\n\t\t.map(([k, v]) => ({\n\t\t\t...v,\n\t\t\tstates: v.states.filter(s => !!s.defaultRole),\n\t\t\tname: k,\n\t\t}));\n};\n"],
+  "mappings": ";;;;;;;;;;;;;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA,2BAA4B;AAErB,MAAM,sBAAgC,CAAC,OAAO;AAE9C,MAAM,oBAAuD,MAAM;AACzE,QAAM,gBAAgB,qBAAAA,QAAgB,YAAY;AAElD,SAAO,OAAO,QAAQ,aAAa,EACjC,OAAO,CAAC,CAAC,GAAG,CAAC,MAAM,CAAC,oBAAoB,SAAS,CAAC,CAAC,EACnD,IAAI,CAAC,CAAC,GAAG,CAAC,OAAO;AAAA,IACjB,GAAG;AAAA,IACH,QAAQ,EAAE,OAAO,OAAO,OAAK,CAAC,CAAC,EAAE,WAAW;AAAA,IAC5C,MAAM;AAAA,EACP,EAAE;AACJ;",
+  "names": ["ChannelDetector"]
+}

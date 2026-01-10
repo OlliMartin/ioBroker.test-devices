@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../src/utils.ts"],
+  "sourcesContent": ["import type { ExternalDetectorState } from '@iobroker/type-detector';\n\nexport const crossProduct = <A, B>(as: readonly A[], bs: readonly B[]): Array<readonly [A, B]> => {\n\tconst result: Array<readonly [A, B]> = [];\n\tfor (const a of as) {\n\t\tfor (const b of bs) {\n\t\t\tresult.push([a, b] as const);\n\t\t}\n\t}\n\treturn result;\n};\n\nexport const getStateType = (state: ExternalDetectorState, fallback?: ioBroker.CommonType): ioBroker.CommonType => {\n\treturn Array.isArray(state.type) ? state.type[0] : (state.type ?? fallback ?? 'string');\n};\n"],
+  "mappings": ";;;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAEO,MAAM,eAAe,CAAO,IAAkB,OAA6C;AACjG,QAAM,SAAiC,CAAC;AACxC,aAAW,KAAK,IAAI;AACnB,eAAW,KAAK,IAAI;AACnB,aAAO,KAAK,CAAC,GAAG,CAAC,CAAU;AAAA,IAC5B;AAAA,EACD;AACA,SAAO;AACR;AAEO,MAAM,eAAe,CAAC,OAA8B,aAAwD;AAZnH;AAaC,SAAO,MAAM,QAAQ,MAAM,IAAI,IAAI,MAAM,KAAK,CAAC,KAAK,iBAAM,SAAN,YAAc,aAAd,YAA0B;AAC/E;",
+  "names": []
+}

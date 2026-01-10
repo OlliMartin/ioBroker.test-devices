@@ -1,44 +1,12 @@
 import * as utils from '@iobroker/adapter-core';
 import ChannelDetector, { type DetectOptions, type ExternalDetectorState } from '@iobroker/type-detector';
-
-// Heck, I can't get typescript to enforce that the array here consists of all properties of the type.
-// If a new type is introduced one line above, it must be added here too :/
-const generationTypes: ioBroker.GenerationTypes = ['all', 'required'];
-
-const deviceFilter: ioBroker.DeviceFilterType = {
-	all: (_1, _2) => true,
-	required: (_, s) => !!s.required,
-};
+import { getDeviceMetadata } from './device-metadata';
+import { crossProduct, getStateType } from './utils';
+import { createDesiredStateDefinitions } from './state-definitions';
+import { generationTypes, GetDeviceFolderName, GetTriggerFolderName } from './constants';
+import { getFallbackValueGenerator } from './value-generator.defs';
 
 const detector: ChannelDetector = new ChannelDetector();
-
-const deviceTypeBlacklist: string[] = ['chart'];
-
-export const getDeviceMetadata: () => ioBroker.DeviceDefinition[] = () => {
-	const knownPatterns = ChannelDetector.getPatterns();
-
-	return Object.entries(knownPatterns)
-		.filter(([k, _]) => !deviceTypeBlacklist.includes(k))
-		.map(([k, v]) => ({
-			...v,
-			states: v.states.filter(s => !!s.defaultRole),
-			name: k,
-		}));
-};
-
-const getStateType = (state: ExternalDetectorState, fallback?: ioBroker.CommonType): ioBroker.CommonType => {
-	return Array.isArray(state.type) ? state.type[0] : (state.type ?? fallback ?? 'string');
-};
-
-const crossProduct = <A, B>(as: readonly A[], bs: readonly B[]): Array<readonly [A, B]> => {
-	const result: Array<readonly [A, B]> = [];
-	for (const a of as) {
-		for (const b of bs) {
-			result.push([a, b] as const);
-		}
-	}
-	return result;
-};
 
 const printMissingDefaultRoleMarkdown = (states: ioBroker.StateWithDeviceRef[]): void => {
 	const sortedStates = [...states] // Assuming sort is stable.
@@ -56,226 +24,7 @@ const printMissingDefaultRoleMarkdown = (states: ioBroker.StateWithDeviceRef[]):
 	console.log(output);
 };
 
-const getFallbackValueGenerator = (): ioBroker.ValueGenerator<ioBroker.StateValue> => {
-	return (sd, _) => {
-		if (sd.commonType === 'number') {
-			return Math.random();
-		}
-		if (sd.commonType === 'string') {
-			return Math.random().toFixed(2);
-		}
-		if (sd.commonType === 'boolean') {
-			return Math.random() > 0.5;
-		}
-
-		return Math.random();
-	};
-};
-
-const FallbackValueGenerator: ioBroker.ValueGenerator<string> = sd =>
-	`${sd.device.name}.${sd.state.name}#${Math.random()}`;
-
-const getToggleBoolValueGenerator = (): ioBroker.ValueGenerator<boolean> => {
-	return (_, val) => !val;
-};
-
-const getNumberRangeGenerator = (min: number, max: number, decimals: number): ioBroker.ValueGenerator<number> => {
-	return (_1, _2) => {
-		return Number((Math.random() * (max - min) + min).toFixed(decimals));
-	};
-};
-
-const getRandomNumberGenerator = (): ioBroker.ValueGenerator<number> => {
-	return getNumberRangeGenerator(0, 20000, 2);
-};
-
-const adjustType = <TIn extends ioBroker.StateValue, TOut extends ioBroker.StateValue>(
-	inputValueGen: ioBroker.ValueGenerator<TIn>,
-	convert: (intermediate: TIn) => TOut,
-): ioBroker.ValueGenerator<TOut> => {
-	return (dsd, val) => convert(inputValueGen(dsd, val));
-};
-
-const commonValueGenerators: ioBroker.ValueGeneratorDefinition[] = [
-	{ u: '%', t: 'number', gen: getNumberRangeGenerator(0, 100, 2) },
-	{ u: 'Hz', t: 'number', gen: getNumberRangeGenerator(5000, 15000, 0) },
-	{ u: 'V', t: 'number', gen: getNumberRangeGenerator(80, 150, 1) },
-	{ u: 'W', t: 'number', gen: getNumberRangeGenerator(20, 500, 0) },
-	{ u: 'Wh', t: 'number', gen: getNumberRangeGenerator(20, 500, 0) },
-	{ u: 'km/h', t: 'number', gen: getNumberRangeGenerator(5, 20, 2) },
-	{ u: 'lux', t: 'number', gen: getRandomNumberGenerator() },
-	{ u: 'mA', t: 'number', gen: getRandomNumberGenerator() },
-	{ u: 'mbar', t: 'number', gen: getRandomNumberGenerator() },
-	{ u: 'sec', t: 'number', gen: getNumberRangeGenerator(0, 300, 0) },
-	{ u: '°', t: 'number', gen: getRandomNumberGenerator() },
-
-	/* Longitude & Latidue */
-	{ u: '°', t: 'number', /* d: 'location', */ s: ['LONGITUDE'], gen: getNumberRangeGenerator(-180, +180, 5) },
-	{ u: '°', t: 'number', /* d: 'location', */ s: ['LATITUDE'], gen: getNumberRangeGenerator(-90, +90, 5) },
-
-	{ u: '°', t: 'string', gen: adjustType(getRandomNumberGenerator(), num => num.toFixed(2)) },
-	{ u: '°C', t: 'number', gen: getNumberRangeGenerator(-5, 35, 1) },
-
-	{
-		u: '%%CUSTOM%%',
-		t: 'number',
-		d: ['rgb', 'rgbwSingle'],
-		s: ['RED', 'GREEN', 'BLUE', 'WHITE'],
-		gen: getNumberRangeGenerator(0, 255, 0),
-	},
-	{
-		u: '%%CUSTOM%%',
-		t: 'number',
-		d: ['rgb', 'rgbwSingle'],
-		s: ['TEMPERATURE'],
-		gen: getNumberRangeGenerator(0, 1000, 0),
-	} /* I'm guessing Kelvin? What's the UOM here? */,
-
-	{
-		u: '%%CUSTOM%%',
-		t: 'string',
-		s: ['WORKING', 'ERROR'],
-		gen: (sd, _) => (sd.state.name === 'WORKING' ? 'YES' : 'NO'),
-	},
-
-	{ u: '%%TYPE_MATCH%%', t: 'number', gen: getRandomNumberGenerator(), isFallback: true },
-	{ u: '%%TYPE_MATCH%%', t: 'string', gen: FallbackValueGenerator, isFallback: true },
-
-	/* Booleans can never be fallbacks */
-	{
-		u: '%%TYPE_MATCH%%',
-		t: 'boolean',
-		gen: getToggleBoolValueGenerator(),
-		isFallback: false,
-	},
-];
-
-const getValueGeneratorRelevance = (vg: ioBroker.ValueGeneratorDefinition): number => {
-	let result = 0;
-	if (vg.u !== '%%CUSTOM%%' && vg.u !== '%%TYPE_MATCH%%') {
-		result += 2;
-	}
-
-	if (vg.d) {
-		result += 3;
-	}
-
-	if (vg.s) {
-		result += 1;
-	}
-	return result;
-};
-
-const getValueGenerator = (
-	stateDefinition: ioBroker.DeviceStateDefinition,
-): ioBroker.ValueGenerator<ioBroker.StateValue> | undefined => {
-	const logFallback = (sd: ioBroker.DeviceStateDefinition, vg: ioBroker.ValueGeneratorDefinition): void => {
-		if (!vg.isFallback) {
-			return;
-		}
-		console.log(`Warning: Fallback used for ${sd.device.name}:${sd.state.name} (${sd.commonType}).`);
-	};
-
-	const exactGeneratorMatches = commonValueGenerators.filter(
-		vgDef =>
-			vgDef.u === stateDefinition.state.defaultUnit &&
-			vgDef.t === stateDefinition.commonType &&
-			(vgDef.d === undefined || vgDef.d.includes(stateDefinition.device.name)) &&
-			(vgDef.s === undefined || vgDef.s.includes(stateDefinition.state.name)),
-	);
-
-	if (exactGeneratorMatches.length === 1) {
-		logFallback(stateDefinition, exactGeneratorMatches[0]);
-		return exactGeneratorMatches[0].gen;
-	} else if (exactGeneratorMatches.length > 1) {
-		const genWithHighestSpecification = exactGeneratorMatches.sort(
-			(a, b) => getValueGeneratorRelevance(b) - getValueGeneratorRelevance(a),
-		);
-
-		return genWithHighestSpecification[0].gen;
-	}
-
-	const customMatches = commonValueGenerators.filter(
-		vgDef =>
-			vgDef.u === '%%CUSTOM%%' &&
-			vgDef.t === stateDefinition.commonType &&
-			(vgDef.d === undefined || vgDef.d.includes(stateDefinition.device.name)) &&
-			(vgDef.s === undefined || vgDef.s.includes(stateDefinition.state.name)),
-	);
-
-	if (customMatches.length === 1) {
-		logFallback(stateDefinition, customMatches[0]);
-		return customMatches[0].gen;
-	}
-
-	const typeMatches = commonValueGenerators.filter(
-		vgDef => vgDef.u === '%%TYPE_MATCH%%' && vgDef.t === stateDefinition.commonType,
-	);
-
-	if (typeMatches.length === 1) {
-		logFallback(stateDefinition, typeMatches[0]);
-		return typeMatches[0].gen;
-	}
-
-	return undefined;
-};
-
-export const createDesiredStateDefinitions = (
-	namespace: string,
-	config: ioBroker.AdapterConfig,
-	validDevices: ioBroker.DeviceDefinition[],
-): Record<string, ioBroker.DeviceStateDefinition> => {
-	const getDeviceType = (genType: ioBroker.DeviceStatesGenerationType): string =>
-		`${namespace}.${TestDevices.GetDeviceFolderName()}.${genType}`;
-	const getDeviceRoot = (genType: ioBroker.DeviceStatesGenerationType, device: ioBroker.DeviceDefinition): string =>
-		`${getDeviceType(genType)}.${device.name}`;
-
-	// 'NoOp' for now
-	const getFilterContext = (device: ioBroker.DeviceDefinition): ioBroker.DeviceFilterContext => {
-		return { device, config: config };
-	};
-
-	const isReadOnly = (state: ExternalDetectorState): boolean =>
-		(!!state.read || state.read === undefined) && !state.write;
-
-	const stateCacheMemory: ioBroker.DeviceStateDefinition[] = crossProduct(generationTypes, validDevices)
-		.map(arr => ({
-			generationType: arr[0],
-			device: arr[1],
-		}))
-		.map(m => ({
-			...m,
-			context: getFilterContext(m.device),
-			deviceType: getDeviceType(m.generationType),
-			deviceRoot: getDeviceRoot(m.generationType, m.device),
-		}))
-		.map(m =>
-			m.device.states
-				.filter(s => deviceFilter[m.generationType](m.context, s))
-				.map(s => ({
-					...m,
-					state: s,
-					read: s.read ?? true,
-					write: s.write ?? false,
-					stateFqn: `${m.deviceRoot}.${s.name}`,
-					commonType: getStateType(s),
-					isReadOnly: isReadOnly(s),
-					valueGenerator: undefined,
-				})),
-		)
-		.reduce((prev, curr) => [...prev, ...curr], [])
-		.map(sd => ({
-			...sd,
-			valueGenerator: getValueGenerator(sd) ?? getFallbackValueGenerator(),
-		}));
-
-	return stateCacheMemory.reduce((prev, curr) => ({ ...prev, [curr.stateFqn]: curr }), {});
-};
-
 class TestDevices extends utils.Adapter {
-	private static deviceFolderName: string = 'devices';
-	private static triggerFolderName: string = 'triggers';
-
 	private readonly validDevices: ioBroker.DeviceDefinition[];
 	private readonly stateLookup: Record<string, ioBroker.DeviceStateDefinition>;
 
@@ -306,22 +55,14 @@ class TestDevices extends utils.Adapter {
 
 		this.logLater(`Discovering desired states took ${Date.now() - startMs}ms.`);
 
-		const triggerChangeRegex = `^${this.namespace.replace('.', '\\.')}\\.${TestDevices.GetTriggerFolderName()}\\.((${generationTypes.join('|')})\\.([^\\.]*))$`;
+		const triggerChangeRegex = `^${this.namespace.replace('.', '\\.')}\\.${GetTriggerFolderName()}\\.((${generationTypes.join('|')})\\.([^\\.]*))$`;
 		this.logLater(`Constructed trigger change regex: ${triggerChangeRegex}`);
 
-		const deviceChangeRegex = `^${this.namespace}\\.${TestDevices.GetDeviceFolderName()}\\.(${generationTypes.join('|')})\\.([^\\.]*)\\.([^\\.]*)$`;
+		const deviceChangeRegex = `^${this.namespace}\\.${GetDeviceFolderName()}\\.(${generationTypes.join('|')})\\.([^\\.]*)\\.([^\\.]*)$`;
 		this.logLater(`Constructed device change regex: ${deviceChangeRegex}`);
 
 		this.triggerChangeRegex = new RegExp(triggerChangeRegex);
 		this.deviceStateChangeRegex = new RegExp(deviceChangeRegex);
-	}
-
-	public static GetDeviceFolderName(): string {
-		return TestDevices.deviceFolderName;
-	}
-
-	public static GetTriggerFolderName(): string {
-		return TestDevices.triggerFolderName;
 	}
 
 	private async onReady(): Promise<void> {
@@ -432,8 +173,8 @@ class TestDevices extends utils.Adapter {
 	}
 
 	private async createTopLevelFoldersAsync(): Promise<void> {
-		const fqFolderName = `${this.namespace}.${TestDevices.GetDeviceFolderName()}`;
-		const fqTriggerName = `${this.namespace}.${TestDevices.GetTriggerFolderName()}`;
+		const fqFolderName = `${this.namespace}.${GetDeviceFolderName()}`;
+		const fqTriggerName = `${this.namespace}.${GetTriggerFolderName()}`;
 
 		await Promise.allSettled([
 			this.extendObject(fqTriggerName, {
@@ -488,7 +229,7 @@ class TestDevices extends utils.Adapter {
 		device: ioBroker.DeviceDefinition,
 		prefix: ioBroker.DeviceStatesGenerationType,
 	): Promise<void> {
-		const deviceType = `${this.namespace}.${TestDevices.GetDeviceFolderName()}.${prefix}`;
+		const deviceType = `${this.namespace}.${GetDeviceFolderName()}.${prefix}`;
 		await this.extendObject(deviceType, {
 			type: 'device',
 			common: {
@@ -509,7 +250,7 @@ class TestDevices extends utils.Adapter {
 		this.log.debug(`Creating triggers for ${validDevices.length} devices`);
 
 		const startMs = Date.now();
-		const triggerFolder = `${this.namespace}.${TestDevices.GetTriggerFolderName()}`;
+		const triggerFolder = `${this.namespace}.${GetTriggerFolderName()}`;
 
 		for (const generationType of generationTypes) {
 			await this.extendObject(`${triggerFolder}.${generationType}`, {
@@ -522,11 +263,7 @@ class TestDevices extends utils.Adapter {
 
 		for (const generationType of generationTypes) {
 			for (const device of validDevices) {
-				await this.createOrUpdateSingleDeviceTriggerAsync(
-					device,
-					TestDevices.GetTriggerFolderName(),
-					generationType,
-				);
+				await this.createOrUpdateSingleDeviceTriggerAsync(device, GetTriggerFolderName(), generationType);
 			}
 		}
 
@@ -560,7 +297,7 @@ class TestDevices extends utils.Adapter {
 		}
 
 		this.objectsLastRead = Date.now();
-		const objResult = await this.getForeignObjects(`${this.namespace}.${TestDevices.GetDeviceFolderName()}.*`);
+		const objResult = await this.getForeignObjects(`${this.namespace}.${GetDeviceFolderName()}.*`);
 
 		this.log.debug(`Read ${Object.keys(objResult).length} objects in ${Date.now() - this.objectsLastRead}ms.`);
 
@@ -582,7 +319,7 @@ class TestDevices extends utils.Adapter {
 
 		let result = true;
 		for (const generationType of deviceGenerationTypes) {
-			const prefix = `${this.namespace}.${TestDevices.GetDeviceFolderName()}.${generationType}`;
+			const prefix = `${this.namespace}.${GetDeviceFolderName()}.${generationType}`;
 
 			const expectedId = `${prefix}.${deviceType}`;
 
