@@ -23,7 +23,7 @@ export const createDesiredStateDefinitions = (
 	const isReadOnly = (state: ExternalDetectorState): boolean =>
 		(!!state.read || state.read === undefined) && !state.write;
 
-	const stateCacheMemory: ioBroker.DeviceStateDefinition[] = crossProduct(generationTypes, validDevices)
+	let stateCacheMemory: ioBroker.DeviceStateDefinition[] = crossProduct(generationTypes, validDevices)
 		.map(arr => ({
 			generationType: arr[0],
 			device: arr[1],
@@ -48,7 +48,11 @@ export const createDesiredStateDefinitions = (
 					valueGenerator: undefined,
 				})),
 		)
-		.reduce((prev, curr) => [...prev, ...curr], [])
+		.reduce((prev, curr) => [...prev, ...curr], []);
+
+	stateCacheMemory = stateCacheMemory
+		// Filter out duplicates (mapping to same state FQN) coming in through type-detector
+		.filter(sd => stateCacheMemory.filter(sdInner => sdInner.stateFqn === sd.stateFqn).length === 1)
 		.map(sd => ({
 			...sd,
 			valueGenerator: getValueGenerator(sd, trackGeneratorCb) ?? getFallbackValueGenerator(),

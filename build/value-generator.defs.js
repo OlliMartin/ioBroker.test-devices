@@ -25,7 +25,7 @@ module.exports = __toCommonJS(value_generator_defs_exports);
 var import_constants = require("./constants");
 var import_value_generators = require("./value-generators");
 const fallbackValueGenerators = [
-  { u: import_constants.UNIT__TYPE_MATCH, t: "number", gen: (0, import_value_generators.getRandomNumberGenerator)(), isFallback: true },
+  { u: import_constants.UNIT__TYPE_MATCH, t: "number", ...(0, import_value_generators.RandomNumber)(), isFallback: true },
   {
     u: import_constants.UNIT__TYPE_MATCH,
     t: "string",
@@ -38,46 +38,47 @@ const fallbackValueGenerators = [
   {
     u: import_constants.UNIT__TYPE_MATCH,
     t: "boolean",
-    gen: (0, import_value_generators.getToggleBoolValueGenerator)(),
+    ...(0, import_value_generators.Toggle)(),
     isFallback: false
   }
 ];
 const commonValueGenerators = [
-  { u: "%", t: "number", gen: (0, import_value_generators.getNumberRangeGenerator)(0, 100, 2) },
-  { u: "Hz", t: "number", gen: (0, import_value_generators.getNumberRangeGenerator)(5e3, 15e3, 0) },
-  { u: "V", t: "number", gen: (0, import_value_generators.getNumberRangeGenerator)(80, 150, 1) },
-  { u: "W", t: "number", gen: (0, import_value_generators.getNumberRangeGenerator)(20, 500, 0) },
-  { u: "Wh", t: "number", gen: (0, import_value_generators.getNumberRangeGenerator)(20, 500, 0) },
-  { u: "km/h", t: "number", gen: (0, import_value_generators.getNumberRangeGenerator)(5, 20, 2) },
-  { u: "lux", t: "number", gen: (0, import_value_generators.getRandomNumberGenerator)() },
-  { u: "mA", t: "number", gen: (0, import_value_generators.getRandomNumberGenerator)() },
-  { u: "mbar", t: "number", gen: (0, import_value_generators.getRandomNumberGenerator)() },
-  { u: "sec", t: "number", gen: (0, import_value_generators.getNumberRangeGenerator)(0, 300, 0) },
-  { u: "\xB0", t: "number", gen: (0, import_value_generators.getRandomNumberGenerator)() },
+  { u: "%", t: "number", ...(0, import_value_generators.NumberRange)(0, 100, 2) },
+  { u: "Hz", t: "number", ...(0, import_value_generators.NumberRange)(5e3, 15e3, 0) },
+  { u: "V", t: "number", ...(0, import_value_generators.NumberRange)(80, 150, 1) },
+  { u: "W", t: "number", ...(0, import_value_generators.NumberRange)(20, 500, 0) },
+  { u: "Wh", t: "number", ...(0, import_value_generators.NumberRange)(20, 500, 0) },
+  { u: "km/h", t: "number", ...(0, import_value_generators.NumberRange)(5, 20, 2) },
+  { u: "lux", t: "number", ...(0, import_value_generators.RandomNumber)() },
+  { u: "mA", t: "number", ...(0, import_value_generators.RandomNumber)() },
+  { u: "mbar", t: "number", ...(0, import_value_generators.RandomNumber)() },
+  { u: "sec", t: "number", ...(0, import_value_generators.NumberRange)(0, 300, 0) },
+  { u: "\xB0", t: "number", ...(0, import_value_generators.RandomNumber)() },
   /* Longitude & Latidue */
-  { u: "\xB0", t: "number", d: ["location"], s: ["LONGITUDE"], gen: (0, import_value_generators.getNumberRangeGenerator)(-180, 180, 5) },
-  { u: "\xB0", t: "number", d: ["location"], s: ["LATITUDE"], gen: (0, import_value_generators.getNumberRangeGenerator)(-90, 90, 5) },
-  { u: "\xB0", t: "string", gen: (0, import_value_generators.adjustType)((0, import_value_generators.getRandomNumberGenerator)(), (num) => num.toFixed(2)) },
-  { u: "\xB0C", t: "number", gen: (0, import_value_generators.getNumberRangeGenerator)(-5, 35, 1) },
+  { u: "\xB0", t: "number", d: ["location"], s: ["LONGITUDE"], ...(0, import_value_generators.NumberRange)(-180, 180, 5) },
+  { u: "\xB0", t: "number", d: ["location"], s: ["LATITUDE"], ...(0, import_value_generators.NumberRange)(-90, 90, 5) },
+  { u: "\xB0", t: "string", ...(0, import_value_generators.AdjustType)((0, import_value_generators.RandomNumber)(), (num) => num.toFixed(2)) },
+  { u: "\xB0C", t: "number", ...(0, import_value_generators.NumberRange)(-5, 35, 1) },
   {
     u: import_constants.UNIT__CUSTOM,
     t: "number",
     d: ["rgb", "rgbwSingle"],
     s: ["RED", "GREEN", "BLUE", "WHITE"],
-    gen: (0, import_value_generators.getNumberRangeGenerator)(0, 255, 0)
+    ...(0, import_value_generators.NumberRange)(0, 255, 0)
   },
   {
     u: import_constants.UNIT__CUSTOM,
     t: "number",
     d: ["rgb", "rgbwSingle"],
     s: ["TEMPERATURE"],
-    gen: (0, import_value_generators.getNumberRangeGenerator)(0, 1e3, 0)
+    ...(0, import_value_generators.NumberRange)(0, 1e3, 0)
   },
   {
     u: import_constants.UNIT__CUSTOM,
     t: "string",
     s: ["WORKING", "ERROR"],
-    gen: (sd, _) => sd.state.name === "WORKING" ? "YES" : "NO"
+    gen: (sd, _) => sd.state.name === "WORKING" ? "YES" : "NO",
+    description: "'YES' or 'NO'"
   },
   ...fallbackValueGenerators
 ];

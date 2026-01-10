@@ -17,3 +17,19 @@ export const getStateType = (state: ExternalDetectorState, fallback?: ioBroker.C
 export const summarizeStateDefinition = (sd: ioBroker.DeviceStateDefinition): string => {
 	return `${sd.device.name}:${sd.state.name} (Type=${sd.commonType})`;
 };
+
+export const printMissingDefaultRoleMarkdown = (states: ioBroker.StateWithDeviceRef[]): void => {
+	const sortedStates = [...states] // Assuming sort is stable.
+		.sort((a, b) => a.name.localeCompare(b.name))
+		.sort((a, b) => a.deviceRef.name.localeCompare(b.deviceRef.name));
+
+	let output = '| Device | Name | Type | Role Regex |\n';
+	output += '| - | - | - | - |\n';
+
+	/*                                                                                   *caugh* */
+	for (const state of sortedStates) {
+		output += `| ${state.deviceRef.name} | ${state.name} | ${getStateType(state, 'N/A' as any)} | \`${state.role}\` |\n`;
+	}
+
+	console.log(output);
+};

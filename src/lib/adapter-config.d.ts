@@ -68,6 +68,11 @@ declare global {
 			gen: ValueGenerator<boolean>;
 		};
 
+		type ValueGeneratorResult<T extends StateValue> = {
+			gen: ValueGenerator<T>;
+			description: string;
+		};
+
 		type ValueGeneratorBase = {
 			u: string;
 

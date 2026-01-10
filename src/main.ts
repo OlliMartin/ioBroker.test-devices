@@ -1,28 +1,12 @@
 import * as utils from '@iobroker/adapter-core';
 import ChannelDetector, { type DetectOptions, type ExternalDetectorState } from '@iobroker/type-detector';
 import { getDeviceMetadata } from './device-metadata';
-import { crossProduct, getStateType } from './utils';
+import { crossProduct, printMissingDefaultRoleMarkdown } from './utils';
 import { createDesiredStateDefinitions } from './state-definitions';
 import { generationTypes, GetDeviceFolderName, GetTriggerFolderName } from './constants';
 import { getFallbackValueGenerator } from './value-generators';
 
 const detector: ChannelDetector = new ChannelDetector();
-
-const printMissingDefaultRoleMarkdown = (states: ioBroker.StateWithDeviceRef[]): void => {
-	const sortedStates = [...states] // Assuming sort is stable.
-		.sort((a, b) => a.name.localeCompare(b.name))
-		.sort((a, b) => a.deviceRef.name.localeCompare(b.deviceRef.name));
-
-	let output = '| Device | Name | Type | Role Regex |\n';
-	output += '| - | - | - | - |\n';
-
-	/*                                                                                   *caugh* */
-	for (const state of sortedStates) {
-		output += `| ${state.deviceRef.name} | ${state.name} | ${getStateType(state, 'N/A' as any)} | \`${state.role}\` |\n`;
-	}
-
-	console.log(output);
-};
 
 class TestDevices extends utils.Adapter {
 	private readonly validDevices: ioBroker.DeviceDefinition[];
@@ -41,14 +25,10 @@ class TestDevices extends utils.Adapter {
 		this.on('unload', this.onUnload.bind(this));
 
 		const startMs = Date.now();
-		const allDevices = getDeviceMetadata();
+		this.validDevices = getDeviceMetadata(this.logLater);
 
-		this.analyzeAllStates(allDevices);
-
-		const deviceNamesWithMissingDefaultRoles = this.getDeviceNamesMissingDefaultRoles(allDevices);
-		this.analyzeDuplicateDefaultRoles(allDevices);
-
-		this.validDevices = allDevices.filter(d => !deviceNamesWithMissingDefaultRoles.includes(d.name));
+		this.analyzeAllStates(this.validDevices);
+		this.analyzeDuplicateDefaultRoles(this.validDevices);
 
 		this.stateLookup = createDesiredStateDefinitions(this.namespace, this.config, this.validDevices);
 		this.stateNames = Object.keys(this.stateLookup);
@@ -140,7 +120,7 @@ class TestDevices extends utils.Adapter {
 
 			await Promise.all(relevantStates.map(handleSingleState));
 
-			// ACK
+			//                               v ACK
 			await this.setState(id, state, true);
 			this.log.debug(`Trigger processed in ${Date.now() - startMs}ms.`);
 		}
@@ -414,24 +394,6 @@ class TestDevices extends utils.Adapter {
 				this.logLater(`\t${device.name} -> Duplicate Roles: ${duplicatedDefaultRoles.join(', ')}`);
 			}
 		}
-	}
-
-	private getDeviceNamesMissingDefaultRoles(allDevices: ioBroker.DeviceDefinition[]): string[] {
-		const devicesWithMissingDefaultRoles = allDevices.filter(
-			d => d.states.filter(s => s.required && !s.defaultRole).length > 0,
-		);
-
-		const deviceNamesWithMissingDefaultRoles = devicesWithMissingDefaultRoles.map(d => d.name);
-
-		if (devicesWithMissingDefaultRoles.length > 0) {
-			this.logLater(
-				`Found ${devicesWithMissingDefaultRoles.length} devices with missing default roles: [${deviceNamesWithMissingDefaultRoles.join(
-					', ',
-				)}] These will be skipped.`,
-			);
-		}
-
-		return deviceNamesWithMissingDefaultRoles;
 	}
 
 	private setConnected(isConnected: boolean): void {

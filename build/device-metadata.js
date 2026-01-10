@@ -29,22 +29,40 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 var device_metadata_exports = {};
 __export(device_metadata_exports, {
   deviceTypeBlacklist: () => deviceTypeBlacklist,
-  getDeviceMetadata: () => getDeviceMetadata
+  getDeviceMetadata: () => getDeviceMetadata,
+  getDeviceNamesMissingDefaultRoles: () => getDeviceNamesMissingDefaultRoles
 });
 module.exports = __toCommonJS(device_metadata_exports);
 var import_type_detector = __toESM(require("@iobroker/type-detector"));
 const deviceTypeBlacklist = ["chart"];
-const getDeviceMetadata = () => {
+const getDeviceNamesMissingDefaultRoles = (allDevices, logCb) => {
+  const devicesWithMissingDefaultRoles = allDevices.filter(
+    (d) => d.states.filter((s) => s.required && !s.defaultRole).length > 0
+  );
+  const deviceNamesWithMissingDefaultRoles = devicesWithMissingDefaultRoles.map((d) => d.name);
+  if (devicesWithMissingDefaultRoles.length > 0) {
+    logCb(
+      `Found ${devicesWithMissingDefaultRoles.length} devices with missing default roles: [${deviceNamesWithMissingDefaultRoles.join(
+        ", "
+      )}] These will be skipped.`
+    );
+  }
+  return deviceNamesWithMissingDefaultRoles;
+};
+const getDeviceMetadata = (logCb) => {
   const knownPatterns = import_type_detector.default.getPatterns();
-  return Object.entries(knownPatterns).filter(([k, _]) => !deviceTypeBlacklist.includes(k)).map(([k, v]) => ({
+  const allDevices = Object.entries(knownPatterns).filter(([k, _]) => !deviceTypeBlacklist.includes(k)).map(([k, v]) => ({
     ...v,
     states: v.states.filter((s) => !!s.defaultRole),
     name: k
   }));
+  const deviceNamesWithMissingDefaultRoles = getDeviceNamesMissingDefaultRoles(allDevices, logCb);
+  return allDevices.filter((d) => !deviceNamesWithMissingDefaultRoles.includes(d.name));
 };
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   deviceTypeBlacklist,
-  getDeviceMetadata
+  getDeviceMetadata,
+  getDeviceNamesMissingDefaultRoles
 });
 //# sourceMappingURL=device-metadata.js.map

@@ -20,6 +20,7 @@ var utils_exports = {};
 __export(utils_exports, {
   crossProduct: () => crossProduct,
   getStateType: () => getStateType,
+  printMissingDefaultRoleMarkdown: () => printMissingDefaultRoleMarkdown,
   summarizeStateDefinition: () => summarizeStateDefinition
 });
 module.exports = __toCommonJS(utils_exports);
@@ -39,10 +40,21 @@ const getStateType = (state, fallback) => {
 const summarizeStateDefinition = (sd) => {
   return `${sd.device.name}:${sd.state.name} (Type=${sd.commonType})`;
 };
+const printMissingDefaultRoleMarkdown = (states) => {
+  const sortedStates = [...states].sort((a, b) => a.name.localeCompare(b.name)).sort((a, b) => a.deviceRef.name.localeCompare(b.deviceRef.name));
+  let output = "| Device | Name | Type | Role Regex |\n";
+  output += "| - | - | - | - |\n";
+  for (const state of sortedStates) {
+    output += `| ${state.deviceRef.name} | ${state.name} | ${getStateType(state, "N/A")} | \`${state.role}\` |
+`;
+  }
+  console.log(output);
+};
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   crossProduct,
   getStateType,
+  printMissingDefaultRoleMarkdown,
   summarizeStateDefinition
 });
 //# sourceMappingURL=utils.js.map

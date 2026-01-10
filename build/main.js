@@ -29,16 +29,6 @@ var import_state_definitions = require("./state-definitions");
 var import_constants = require("./constants");
 var import_value_generators = require("./value-generators");
 const detector = new import_type_detector.default();
-const printMissingDefaultRoleMarkdown = (states) => {
-  const sortedStates = [...states].sort((a, b) => a.name.localeCompare(b.name)).sort((a, b) => a.deviceRef.name.localeCompare(b.deviceRef.name));
-  let output = "| Device | Name | Type | Role Regex |\n";
-  output += "| - | - | - | - |\n";
-  for (const state of sortedStates) {
-    output += `| ${state.deviceRef.name} | ${state.name} | ${(0, import_utils.getStateType)(state, "N/A")} | \`${state.role}\` |
-`;
-  }
-  console.log(output);
-};
 class TestDevices extends utils.Adapter {
   validDevices;
   stateLookup;
@@ -53,11 +43,9 @@ class TestDevices extends utils.Adapter {
     this.on("stateChange", this.onStateChange.bind(this));
     this.on("unload", this.onUnload.bind(this));
     const startMs = Date.now();
-    const allDevices = (0, import_device_metadata.getDeviceMetadata)();
-    this.analyzeAllStates(allDevices);
-    const deviceNamesWithMissingDefaultRoles = this.getDeviceNamesMissingDefaultRoles(allDevices);
-    this.analyzeDuplicateDefaultRoles(allDevices);
-    this.validDevices = allDevices.filter((d) => !deviceNamesWithMissingDefaultRoles.includes(d.name));
+    this.validDevices = (0, import_device_metadata.getDeviceMetadata)(this.logLater);
+    this.analyzeAllStates(this.validDevices);
+    this.analyzeDuplicateDefaultRoles(this.validDevices);
     this.stateLookup = (0, import_state_definitions.createDesiredStateDefinitions)(this.namespace, this.config, this.validDevices);
     this.stateNames = Object.keys(this.stateLookup);
     this.logLater(`Discovering desired states took ${Date.now() - startMs}ms.`);
@@ -317,7 +305,7 @@ class TestDevices extends utils.Adapter {
       this.logLater(
         `States without default role: ${statesWithoutDefaultRole.length} - [${statesWithoutDefaultRole.map((s) => s.name).join(", ")}]`
       );
-      printMissingDefaultRoleMarkdown(statesWithoutDefaultRole);
+      (0, import_utils.printMissingDefaultRoleMarkdown)(statesWithoutDefaultRole);
     }
   }
   analyzeDuplicateDefaultRoles(allDevices) {
@@ -339,20 +327,6 @@ class TestDevices extends utils.Adapter {
         this.logLater(`	${device.name} -> Duplicate Roles: ${duplicatedDefaultRoles.join(", ")}`);
       }
     }
-  }
-  getDeviceNamesMissingDefaultRoles(allDevices) {
-    const devicesWithMissingDefaultRoles = allDevices.filter(
-      (d) => d.states.filter((s) => s.required && !s.defaultRole).length > 0
-    );
-    const deviceNamesWithMissingDefaultRoles = devicesWithMissingDefaultRoles.map((d) => d.name);
-    if (devicesWithMissingDefaultRoles.length > 0) {
-      this.logLater(
-        `Found ${devicesWithMissingDefaultRoles.length} devices with missing default roles: [${deviceNamesWithMissingDefaultRoles.join(
-          ", "
-        )}] These will be skipped.`
-      );
-    }
-    return deviceNamesWithMissingDefaultRoles;
   }
   setConnected(isConnected) {
     void this.setState(

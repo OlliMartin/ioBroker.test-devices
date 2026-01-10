@@ -32,7 +32,7 @@ const createDesiredStateDefinitions = (namespace, config, validDevices, trackGen
     return { device, config };
   };
   const isReadOnly = (state) => (!!state.read || state.read === void 0) && !state.write;
-  const stateCacheMemory = (0, import_utils.crossProduct)(import_constants.generationTypes, validDevices).map((arr) => ({
+  let stateCacheMemory = (0, import_utils.crossProduct)(import_constants.generationTypes, validDevices).map((arr) => ({
     generationType: arr[0],
     device: arr[1]
   })).map((m) => ({
@@ -54,7 +54,8 @@ const createDesiredStateDefinitions = (namespace, config, validDevices, trackGen
         valueGenerator: void 0
       };
     })
-  ).reduce((prev, curr) => [...prev, ...curr], []).map((sd) => {
+  ).reduce((prev, curr) => [...prev, ...curr], []);
+  stateCacheMemory = stateCacheMemory.filter((sd) => stateCacheMemory.filter((sdInner) => sdInner.stateFqn === sd.stateFqn).length === 1).map((sd) => {
     var _a;
     return {
       ...sd,
