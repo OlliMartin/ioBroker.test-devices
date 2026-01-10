@@ -23,9 +23,9 @@ __export(state_definitions_exports, {
 module.exports = __toCommonJS(state_definitions_exports);
 var import_utils = require("./utils");
 var import_constants = require("./constants");
-var import_value_generator = require("./value-generator");
-var import_value_generator2 = require("./value-generator.defs");
-const createDesiredStateDefinitions = (namespace, config, validDevices) => {
+var import_value_generator_factory = require("./value-generator-factory");
+var import_value_generators = require("./value-generators");
+const createDesiredStateDefinitions = (namespace, config, validDevices, trackGeneratorCb) => {
   const getDeviceType = (genType) => `${namespace}.${(0, import_constants.GetDeviceFolderName)()}.${genType}`;
   const getDeviceRoot = (genType, device) => `${getDeviceType(genType)}.${device.name}`;
   const getFilterContext = (device) => {
@@ -58,7 +58,7 @@ const createDesiredStateDefinitions = (namespace, config, validDevices) => {
     var _a;
     return {
       ...sd,
-      valueGenerator: (_a = (0, import_value_generator.getValueGenerator)(sd)) != null ? _a : (0, import_value_generator2.getFallbackValueGenerator)()
+      valueGenerator: (_a = (0, import_value_generator_factory.getValueGenerator)(sd, trackGeneratorCb)) != null ? _a : (0, import_value_generators.getFallbackValueGenerator)()
     };
   });
   return stateCacheMemory.reduce((prev, curr) => ({ ...prev, [curr.stateFqn]: curr }), {});

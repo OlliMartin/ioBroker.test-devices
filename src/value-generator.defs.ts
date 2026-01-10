@@ -1,42 +1,28 @@
-export const getFallbackValueGenerator = (): ioBroker.ValueGenerator<ioBroker.StateValue> => {
-	return (sd, _) => {
-		if (sd.commonType === 'number') {
-			return Math.random();
-		}
-		if (sd.commonType === 'string') {
-			return Math.random().toFixed(2);
-		}
-		if (sd.commonType === 'boolean') {
-			return Math.random() > 0.5;
-		}
+import { UNIT__CUSTOM, UNIT__TYPE_MATCH } from './constants';
+import {
+	adjustType,
+	getFallbackValueGenerator,
+	getNumberRangeGenerator,
+	getRandomNumberGenerator,
+	getToggleBoolValueGenerator,
+} from './value-generators';
 
-		return Math.random();
-	};
-};
+export const fallbackValueGenerators: ioBroker.ValueGeneratorDefinition[] = [
+	{ u: UNIT__TYPE_MATCH, t: 'number', gen: getRandomNumberGenerator(), isFallback: true },
+	{
+		u: UNIT__TYPE_MATCH,
+		t: 'string',
+		gen: adjustType(getFallbackValueGenerator(), v => v?.toString() ?? 'N/A'),
+		isFallback: true,
+	},
+	{
+		u: UNIT__TYPE_MATCH,
+		t: 'boolean',
+		gen: getToggleBoolValueGenerator(),
 
-const FallbackValueGenerator: ioBroker.ValueGenerator<string> = sd =>
-	`${sd.device.name}.${sd.state.name}#${Math.random()}`;
-
-const getToggleBoolValueGenerator = (): ioBroker.ValueGenerator<boolean> => {
-	return (_, val) => !val;
-};
-
-const getNumberRangeGenerator = (min: number, max: number, decimals: number): ioBroker.ValueGenerator<number> => {
-	return (_1, _2) => {
-		return Number((Math.random() * (max - min) + min).toFixed(decimals));
-	};
-};
-
-const getRandomNumberGenerator = (): ioBroker.ValueGenerator<number> => {
-	return getNumberRangeGenerator(0, 20000, 2);
-};
-
-const adjustType = <TIn extends ioBroker.StateValue, TOut extends ioBroker.StateValue>(
-	inputValueGen: ioBroker.ValueGenerator<TIn>,
-	convert: (intermediate: TIn) => TOut,
-): ioBroker.ValueGenerator<TOut> => {
-	return (dsd, val) => convert(inputValueGen(dsd, val));
-};
+		isFallback: false,
+	},
+];
 
 export const commonValueGenerators: ioBroker.ValueGeneratorDefinition[] = [
 	{ u: '%', t: 'number', gen: getNumberRangeGenerator(0, 100, 2) },
@@ -52,21 +38,21 @@ export const commonValueGenerators: ioBroker.ValueGeneratorDefinition[] = [
 	{ u: '°', t: 'number', gen: getRandomNumberGenerator() },
 
 	/* Longitude & Latidue */
-	{ u: '°', t: 'number', /* d: 'location', */ s: ['LONGITUDE'], gen: getNumberRangeGenerator(-180, +180, 5) },
-	{ u: '°', t: 'number', /* d: 'location', */ s: ['LATITUDE'], gen: getNumberRangeGenerator(-90, +90, 5) },
+	{ u: '°', t: 'number', d: ['location'], s: ['LONGITUDE'], gen: getNumberRangeGenerator(-180, +180, 5) },
+	{ u: '°', t: 'number', d: ['location'], s: ['LATITUDE'], gen: getNumberRangeGenerator(-90, +90, 5) },
 
 	{ u: '°', t: 'string', gen: adjustType(getRandomNumberGenerator(), num => num.toFixed(2)) },
 	{ u: '°C', t: 'number', gen: getNumberRangeGenerator(-5, 35, 1) },
 
 	{
-		u: '%%CUSTOM%%',
+		u: UNIT__CUSTOM,
 		t: 'number',
 		d: ['rgb', 'rgbwSingle'],
 		s: ['RED', 'GREEN', 'BLUE', 'WHITE'],
 		gen: getNumberRangeGenerator(0, 255, 0),
 	},
 	{
-		u: '%%CUSTOM%%',
+		u: UNIT__CUSTOM,
 		t: 'number',
 		d: ['rgb', 'rgbwSingle'],
 		s: ['TEMPERATURE'],
@@ -74,20 +60,11 @@ export const commonValueGenerators: ioBroker.ValueGeneratorDefinition[] = [
 	} /* I'm guessing Kelvin? What's the UOM here? */,
 
 	{
-		u: '%%CUSTOM%%',
+		u: UNIT__CUSTOM,
 		t: 'string',
 		s: ['WORKING', 'ERROR'],
 		gen: (sd, _) => (sd.state.name === 'WORKING' ? 'YES' : 'NO'),
 	},
 
-	{ u: '%%TYPE_MATCH%%', t: 'number', gen: getRandomNumberGenerator(), isFallback: true },
-	{ u: '%%TYPE_MATCH%%', t: 'string', gen: FallbackValueGenerator, isFallback: true },
-
-	/* Booleans can never be fallbacks */
-	{
-		u: '%%TYPE_MATCH%%',
-		t: 'boolean',
-		gen: getToggleBoolValueGenerator(),
-		isFallback: false,
-	},
+	...fallbackValueGenerators,
 ];

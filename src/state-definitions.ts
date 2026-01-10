@@ -1,13 +1,14 @@
 import type { ExternalDetectorState } from '@iobroker/type-detector';
 import { crossProduct, getStateType } from './utils';
 import { deviceFilter, generationTypes, GetDeviceFolderName } from './constants';
-import { getValueGenerator } from './value-generator';
-import { getFallbackValueGenerator } from './value-generator.defs';
+import { getValueGenerator } from './value-generator-factory';
+import { getFallbackValueGenerator } from './value-generators';
 
 export const createDesiredStateDefinitions = (
 	namespace: string,
 	config: ioBroker.AdapterConfig,
 	validDevices: ioBroker.DeviceDefinition[],
+	trackGeneratorCb?: (sd: ioBroker.DeviceStateDefinition, vg: ioBroker.ValueGeneratorDefinition[]) => void,
 ): Record<string, ioBroker.DeviceStateDefinition> => {
 	const getDeviceType = (genType: ioBroker.DeviceStatesGenerationType): string =>
 		`${namespace}.${GetDeviceFolderName()}.${genType}`;
@@ -50,7 +51,7 @@ export const createDesiredStateDefinitions = (
 		.reduce((prev, curr) => [...prev, ...curr], [])
 		.map(sd => ({
 			...sd,
-			valueGenerator: getValueGenerator(sd) ?? getFallbackValueGenerator(),
+			valueGenerator: getValueGenerator(sd, trackGeneratorCb) ?? getFallbackValueGenerator(),
 		}));
 
 	return stateCacheMemory.reduce((prev, curr) => ({ ...prev, [curr.stateFqn]: curr }), {});

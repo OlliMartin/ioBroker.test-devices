@@ -16,15 +16,17 @@ var __copyProps = (to, from, except, desc) => {
   return to;
 };
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
-var value_generator_exports = {};
-__export(value_generator_exports, {
+var value_generator_factory_exports = {};
+__export(value_generator_factory_exports, {
   getValueGenerator: () => getValueGenerator
 });
-module.exports = __toCommonJS(value_generator_exports);
+module.exports = __toCommonJS(value_generator_factory_exports);
 var import_value_generator = require("./value-generator.defs");
+var import_constants = require("./constants");
+var import_value_generators = require("./value-generators");
 const getValueGeneratorRelevance = (vg) => {
   let result = 0;
-  if (vg.u !== "%%CUSTOM%%" && vg.u !== "%%TYPE_MATCH%%") {
+  if (vg.u !== import_constants.UNIT__CUSTOM && vg.u !== import_constants.UNIT__TYPE_MATCH) {
     result += 2;
   }
   if (vg.d) {
@@ -35,9 +37,15 @@ const getValueGeneratorRelevance = (vg) => {
   }
   return result;
 };
-const getValueGenerator = (stateDefinition) => {
-  const logFallback = (sd, vg) => {
-    if (!vg.isFallback) {
+const getValueGenerator = (stateDefinition, trackGeneratorCb) => {
+  trackGeneratorCb != null ? trackGeneratorCb : trackGeneratorCb = (sd, vg) => {
+    if (vg.length > 1) {
+      console.log(
+        `Warning: Identified more than one value generator for ${sd.device.name}:${sd.state.name} (${sd.commonType}).`
+      );
+      return;
+    }
+    if (!vg[0].isFallback) {
       return;
     }
     console.log(`Warning: Fallback used for ${sd.device.name}:${sd.state.name} (${sd.commonType}).`);
@@ -46,32 +54,37 @@ const getValueGenerator = (stateDefinition) => {
     (vgDef) => vgDef.u === stateDefinition.state.defaultUnit && vgDef.t === stateDefinition.commonType && (vgDef.d === void 0 || vgDef.d.includes(stateDefinition.device.name)) && (vgDef.s === void 0 || vgDef.s.includes(stateDefinition.state.name))
   );
   if (exactGeneratorMatches.length === 1) {
-    logFallback(stateDefinition, exactGeneratorMatches[0]);
+    trackGeneratorCb(stateDefinition, exactGeneratorMatches);
     return exactGeneratorMatches[0].gen;
   } else if (exactGeneratorMatches.length > 1) {
-    const genWithHighestSpecification = exactGeneratorMatches.sort(
+    const genSortedByApplicability = exactGeneratorMatches.sort(
       (a, b) => getValueGeneratorRelevance(b) - getValueGeneratorRelevance(a)
     );
-    return genWithHighestSpecification[0].gen;
+    if (getValueGeneratorRelevance(genSortedByApplicability[0]) == getValueGeneratorRelevance(genSortedByApplicability[1])) {
+      trackGeneratorCb(stateDefinition, genSortedByApplicability);
+      return genSortedByApplicability[0].gen;
+    }
+    trackGeneratorCb(stateDefinition, [genSortedByApplicability[0]]);
+    return genSortedByApplicability[0].gen;
   }
   const customMatches = import_value_generator.commonValueGenerators.filter(
     (vgDef) => vgDef.u === "%%CUSTOM%%" && vgDef.t === stateDefinition.commonType && (vgDef.d === void 0 || vgDef.d.includes(stateDefinition.device.name)) && (vgDef.s === void 0 || vgDef.s.includes(stateDefinition.state.name))
   );
   if (customMatches.length === 1) {
-    logFallback(stateDefinition, customMatches[0]);
+    trackGeneratorCb(stateDefinition, customMatches);
     return customMatches[0].gen;
   }
   const typeMatches = import_value_generator.commonValueGenerators.filter(
     (vgDef) => vgDef.u === "%%TYPE_MATCH%%" && vgDef.t === stateDefinition.commonType
   );
   if (typeMatches.length === 1) {
-    logFallback(stateDefinition, typeMatches[0]);
+    trackGeneratorCb(stateDefinition, typeMatches);
     return typeMatches[0].gen;
   }
-  return void 0;
+  return (0, import_value_generators.getFallbackValueGenerator)();
 };
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   getValueGenerator
 });
-//# sourceMappingURL=value-generator.js.map
+//# sourceMappingURL=value-generator-factory.js.map

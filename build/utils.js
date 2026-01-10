@@ -19,7 +19,8 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 var utils_exports = {};
 __export(utils_exports, {
   crossProduct: () => crossProduct,
-  getStateType: () => getStateType
+  getStateType: () => getStateType,
+  summarizeStateDefinition: () => summarizeStateDefinition
 });
 module.exports = __toCommonJS(utils_exports);
 const crossProduct = (as, bs) => {
@@ -35,9 +36,13 @@ const getStateType = (state, fallback) => {
   var _a, _b;
   return Array.isArray(state.type) ? state.type[0] : (_b = (_a = state.type) != null ? _a : fallback) != null ? _b : "string";
 };
+const summarizeStateDefinition = (sd) => {
+  return `${sd.device.name}:${sd.state.name} (Type=${sd.commonType})`;
+};
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   crossProduct,
-  getStateType
+  getStateType,
+  summarizeStateDefinition
 });
 //# sourceMappingURL=utils.js.map

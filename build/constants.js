@@ -20,6 +20,8 @@ var constants_exports = {};
 __export(constants_exports, {
   GetDeviceFolderName: () => GetDeviceFolderName,
   GetTriggerFolderName: () => GetTriggerFolderName,
+  UNIT__CUSTOM: () => UNIT__CUSTOM,
+  UNIT__TYPE_MATCH: () => UNIT__TYPE_MATCH,
   deviceFilter: () => deviceFilter,
   generationTypes: () => generationTypes
 });
@@ -35,10 +37,14 @@ const deviceFilter = {
   all: (_1, _2) => true,
   required: (_, s) => !!s.required
 };
+const UNIT__CUSTOM = "%%CUSTOM%%";
+const UNIT__TYPE_MATCH = "%%TYPE_MATCH%%";
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   GetDeviceFolderName,
   GetTriggerFolderName,
+  UNIT__CUSTOM,
+  UNIT__TYPE_MATCH,
   deviceFilter,
   generationTypes
 });

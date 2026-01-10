@@ -13,3 +13,7 @@ export const crossProduct = <A, B>(as: readonly A[], bs: readonly B[]): Array<re
 export const getStateType = (state: ExternalDetectorState, fallback?: ioBroker.CommonType): ioBroker.CommonType => {
 	return Array.isArray(state.type) ? state.type[0] : (state.type ?? fallback ?? 'string');
 };
+
+export const summarizeStateDefinition = (sd: ioBroker.DeviceStateDefinition): string => {
+	return `${sd.device.name}:${sd.state.name} (Type=${sd.commonType})`;
+};

@@ -1,8 +1,10 @@
 import { commonValueGenerators } from './value-generator.defs';
+import { UNIT__CUSTOM, UNIT__TYPE_MATCH } from './constants';
+import { getFallbackValueGenerator } from './value-generators';
 
 const getValueGeneratorRelevance = (vg: ioBroker.ValueGeneratorDefinition): number => {
 	let result = 0;
-	if (vg.u !== '%%CUSTOM%%' && vg.u !== '%%TYPE_MATCH%%') {
+	if (vg.u !== UNIT__CUSTOM && vg.u !== UNIT__TYPE_MATCH) {
 		result += 2;
 	}
 
@@ -18,9 +20,17 @@ const getValueGeneratorRelevance = (vg: ioBroker.ValueGeneratorDefinition): numb
 
 export const getValueGenerator = (
 	stateDefinition: ioBroker.DeviceStateDefinition,
-): ioBroker.ValueGenerator<ioBroker.StateValue> | undefined => {
-	const logFallback = (sd: ioBroker.DeviceStateDefinition, vg: ioBroker.ValueGeneratorDefinition): void => {
-		if (!vg.isFallback) {
+	trackGeneratorCb?: (sd: ioBroker.DeviceStateDefinition, vg: ioBroker.ValueGeneratorDefinition[]) => void,
+): ioBroker.ValueGenerator<ioBroker.StateValue> => {
+	trackGeneratorCb ??= (sd: ioBroker.DeviceStateDefinition, vg: ioBroker.ValueGeneratorDefinition[]): void => {
+		if (vg.length > 1) {
+			console.log(
+				`Warning: Identified more than one value generator for ${sd.device.name}:${sd.state.name} (${sd.commonType}).`,
+			);
+			return;
+		}
+
+		if (!vg[0].isFallback) {
 			return;
 		}
 		console.log(`Warning: Fallback used for ${sd.device.name}:${sd.state.name} (${sd.commonType}).`);
@@ -35,14 +45,23 @@ export const getValueGenerator = (
 	);
 
 	if (exactGeneratorMatches.length === 1) {
-		logFallback(stateDefinition, exactGeneratorMatches[0]);
+		trackGeneratorCb(stateDefinition, exactGeneratorMatches);
 		return exactGeneratorMatches[0].gen;
 	} else if (exactGeneratorMatches.length > 1) {
-		const genWithHighestSpecification = exactGeneratorMatches.sort(
+		const genSortedByApplicability = exactGeneratorMatches.sort(
 			(a, b) => getValueGeneratorRelevance(b) - getValueGeneratorRelevance(a),
 		);
 
-		return genWithHighestSpecification[0].gen;
+		if (
+			getValueGeneratorRelevance(genSortedByApplicability[0]) ==
+			getValueGeneratorRelevance(genSortedByApplicability[1])
+		) {
+			trackGeneratorCb(stateDefinition, genSortedByApplicability);
+			return genSortedByApplicability[0].gen;
+		}
+
+		trackGeneratorCb(stateDefinition, [genSortedByApplicability[0]]);
+		return genSortedByApplicability[0].gen;
 	}
 
 	const customMatches = commonValueGenerators.filter(
@@ -54,7 +73,7 @@ export const getValueGenerator = (
 	);
 
 	if (customMatches.length === 1) {
-		logFallback(stateDefinition, customMatches[0]);
+		trackGeneratorCb(stateDefinition, customMatches);
 		return customMatches[0].gen;
 	}
 
@@ -63,9 +82,9 @@ export const getValueGenerator = (
 	);
 
 	if (typeMatches.length === 1) {
-		logFallback(stateDefinition, typeMatches[0]);
+		trackGeneratorCb(stateDefinition, typeMatches);
 		return typeMatches[0].gen;
 	}
 
-	return undefined;
+	return getFallbackValueGenerator();
 };

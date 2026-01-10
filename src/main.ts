@@ -4,7 +4,7 @@ import { getDeviceMetadata } from './device-metadata';
 import { crossProduct, getStateType } from './utils';
 import { createDesiredStateDefinitions } from './state-definitions';
 import { generationTypes, GetDeviceFolderName, GetTriggerFolderName } from './constants';
-import { getFallbackValueGenerator } from './value-generator.defs';
+import { getFallbackValueGenerator } from './value-generators';
 
 const detector: ChannelDetector = new ChannelDetector();
 

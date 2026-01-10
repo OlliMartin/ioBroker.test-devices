@@ -19,100 +19,71 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 var value_generator_defs_exports = {};
 __export(value_generator_defs_exports, {
   commonValueGenerators: () => commonValueGenerators,
-  getFallbackValueGenerator: () => getFallbackValueGenerator
+  fallbackValueGenerators: () => fallbackValueGenerators
 });
 module.exports = __toCommonJS(value_generator_defs_exports);
-const getFallbackValueGenerator = () => {
-  return (sd, _) => {
-    if (sd.commonType === "number") {
-      return Math.random();
-    }
-    if (sd.commonType === "string") {
-      return Math.random().toFixed(2);
-    }
-    if (sd.commonType === "boolean") {
-      return Math.random() > 0.5;
-    }
-    return Math.random();
-  };
-};
-const FallbackValueGenerator = (sd) => `${sd.device.name}.${sd.state.name}#${Math.random()}`;
-const getToggleBoolValueGenerator = () => {
-  return (_, val) => !val;
-};
-const getNumberRangeGenerator = (min, max, decimals) => {
-  return (_1, _2) => {
-    return Number((Math.random() * (max - min) + min).toFixed(decimals));
-  };
-};
-const getRandomNumberGenerator = () => {
-  return getNumberRangeGenerator(0, 2e4, 2);
-};
-const adjustType = (inputValueGen, convert) => {
-  return (dsd, val) => convert(inputValueGen(dsd, val));
-};
+var import_constants = require("./constants");
+var import_value_generators = require("./value-generators");
+const fallbackValueGenerators = [
+  { u: import_constants.UNIT__TYPE_MATCH, t: "number", gen: (0, import_value_generators.getRandomNumberGenerator)(), isFallback: true },
+  {
+    u: import_constants.UNIT__TYPE_MATCH,
+    t: "string",
+    gen: (0, import_value_generators.adjustType)((0, import_value_generators.getFallbackValueGenerator)(), (v) => {
+      var _a;
+      return (_a = v == null ? void 0 : v.toString()) != null ? _a : "N/A";
+    }),
+    isFallback: true
+  },
+  {
+    u: import_constants.UNIT__TYPE_MATCH,
+    t: "boolean",
+    gen: (0, import_value_generators.getToggleBoolValueGenerator)(),
+    isFallback: false
+  }
+];
 const commonValueGenerators = [
-  { u: "%", t: "number", gen: getNumberRangeGenerator(0, 100, 2) },
-  { u: "Hz", t: "number", gen: getNumberRangeGenerator(5e3, 15e3, 0) },
-  { u: "V", t: "number", gen: getNumberRangeGenerator(80, 150, 1) },
-  { u: "W", t: "number", gen: getNumberRangeGenerator(20, 500, 0) },
-  { u: "Wh", t: "number", gen: getNumberRangeGenerator(20, 500, 0) },
-  { u: "km/h", t: "number", gen: getNumberRangeGenerator(5, 20, 2) },
-  { u: "lux", t: "number", gen: getRandomNumberGenerator() },
-  { u: "mA", t: "number", gen: getRandomNumberGenerator() },
-  { u: "mbar", t: "number", gen: getRandomNumberGenerator() },
-  { u: "sec", t: "number", gen: getNumberRangeGenerator(0, 300, 0) },
-  { u: "\xB0", t: "number", gen: getRandomNumberGenerator() },
+  { u: "%", t: "number", gen: (0, import_value_generators.getNumberRangeGenerator)(0, 100, 2) },
+  { u: "Hz", t: "number", gen: (0, import_value_generators.getNumberRangeGenerator)(5e3, 15e3, 0) },
+  { u: "V", t: "number", gen: (0, import_value_generators.getNumberRangeGenerator)(80, 150, 1) },
+  { u: "W", t: "number", gen: (0, import_value_generators.getNumberRangeGenerator)(20, 500, 0) },
+  { u: "Wh", t: "number", gen: (0, import_value_generators.getNumberRangeGenerator)(20, 500, 0) },
+  { u: "km/h", t: "number", gen: (0, import_value_generators.getNumberRangeGenerator)(5, 20, 2) },
+  { u: "lux", t: "number", gen: (0, import_value_generators.getRandomNumberGenerator)() },
+  { u: "mA", t: "number", gen: (0, import_value_generators.getRandomNumberGenerator)() },
+  { u: "mbar", t: "number", gen: (0, import_value_generators.getRandomNumberGenerator)() },
+  { u: "sec", t: "number", gen: (0, import_value_generators.getNumberRangeGenerator)(0, 300, 0) },
+  { u: "\xB0", t: "number", gen: (0, import_value_generators.getRandomNumberGenerator)() },
   /* Longitude & Latidue */
+  { u: "\xB0", t: "number", d: ["location"], s: ["LONGITUDE"], gen: (0, import_value_generators.getNumberRangeGenerator)(-180, 180, 5) },
+  { u: "\xB0", t: "number", d: ["location"], s: ["LATITUDE"], gen: (0, import_value_generators.getNumberRangeGenerator)(-90, 90, 5) },
+  { u: "\xB0", t: "string", gen: (0, import_value_generators.adjustType)((0, import_value_generators.getRandomNumberGenerator)(), (num) => num.toFixed(2)) },
+  { u: "\xB0C", t: "number", gen: (0, import_value_generators.getNumberRangeGenerator)(-5, 35, 1) },
   {
-    u: "\xB0",
-    t: "number",
-    /* d: 'location', */
-    s: ["LONGITUDE"],
-    gen: getNumberRangeGenerator(-180, 180, 5)
-  },
-  {
-    u: "\xB0",
-    t: "number",
-    /* d: 'location', */
-    s: ["LATITUDE"],
-    gen: getNumberRangeGenerator(-90, 90, 5)
-  },
-  { u: "\xB0", t: "string", gen: adjustType(getRandomNumberGenerator(), (num) => num.toFixed(2)) },
-  { u: "\xB0C", t: "number", gen: getNumberRangeGenerator(-5, 35, 1) },
-  {
-    u: "%%CUSTOM%%",
+    u: import_constants.UNIT__CUSTOM,
     t: "number",
     d: ["rgb", "rgbwSingle"],
     s: ["RED", "GREEN", "BLUE", "WHITE"],
-    gen: getNumberRangeGenerator(0, 255, 0)
+    gen: (0, import_value_generators.getNumberRangeGenerator)(0, 255, 0)
   },
   {
-    u: "%%CUSTOM%%",
+    u: import_constants.UNIT__CUSTOM,
     t: "number",
     d: ["rgb", "rgbwSingle"],
     s: ["TEMPERATURE"],
-    gen: getNumberRangeGenerator(0, 1e3, 0)
+    gen: (0, import_value_generators.getNumberRangeGenerator)(0, 1e3, 0)
   },
   {
-    u: "%%CUSTOM%%",
+    u: import_constants.UNIT__CUSTOM,
     t: "string",
     s: ["WORKING", "ERROR"],
     gen: (sd, _) => sd.state.name === "WORKING" ? "YES" : "NO"
   },
-  { u: "%%TYPE_MATCH%%", t: "number", gen: getRandomNumberGenerator(), isFallback: true },
-  { u: "%%TYPE_MATCH%%", t: "string", gen: FallbackValueGenerator, isFallback: true },
-  /* Booleans can never be fallbacks */
-  {
-    u: "%%TYPE_MATCH%%",
-    t: "boolean",
-    gen: getToggleBoolValueGenerator(),
-    isFallback: false
-  }
+  ...fallbackValueGenerators
 ];
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   commonValueGenerators,
-  getFallbackValueGenerator
+  fallbackValueGenerators
 });
 //# sourceMappingURL=value-generator.defs.js.map

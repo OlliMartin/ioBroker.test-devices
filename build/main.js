@@ -27,7 +27,7 @@ var import_device_metadata = require("./device-metadata");
 var import_utils = require("./utils");
 var import_state_definitions = require("./state-definitions");
 var import_constants = require("./constants");
-var import_value_generator = require("./value-generator.defs");
+var import_value_generators = require("./value-generators");
 const detector = new import_type_detector.default();
 const printMissingDefaultRoleMarkdown = (states) => {
   const sortedStates = [...states].sort((a, b) => a.name.localeCompare(b.name)).sort((a, b) => a.deviceRef.name.localeCompare(b.deviceRef.name));
@@ -123,7 +123,7 @@ class TestDevices extends utils.Adapter {
       const handleSingleState = async (sd) => {
         var _a;
         const currentValue = await this.getStateAsync(sd.stateFqn);
-        const valueGen = (_a = sd.valueGenerator) != null ? _a : (0, import_value_generator.getFallbackValueGenerator)();
+        const valueGen = (_a = sd.valueGenerator) != null ? _a : (0, import_value_generators.getFallbackValueGenerator)();
         const nextValue = valueGen(sd, currentValue == null ? void 0 : currentValue.val);
         await this.setState(sd.stateFqn, { val: nextValue, ack: true });
       };
