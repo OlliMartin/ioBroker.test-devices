@@ -189,8 +189,7 @@ adapter configuration (defaulted from `$.native`) to determine their value. **
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
-
-### **WORK IN PROGRESS**
+### 0.1.1 (2026-01-11)
 
 * (OlliMartin) Fix GH release, address repo-checker findings
 

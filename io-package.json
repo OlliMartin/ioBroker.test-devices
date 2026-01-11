@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "test-devices",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "news": {
+      "0.1.1": {
+        "en": "Fix GH release, address repo-checker findings",
+        "de": "Fix GH-Release, Adress-Repo-Checker-Ergebnisse",
+        "ru": "Fix GH release, address repo-checker findings",
+        "pt": "Corrigir a libertação de GH, resultados do repo-checker do endereço",
+        "nl": "Repareren GH release, adres repo-checker bevindingen",
+        "fr": "Correction de la libération de GH, des résultats du repo-checker d'adresse",
+        "it": "Risolvere il rilascio di GH, i risultati del repo-checker degli indirizzi",
+        "es": "Fija la liberación de GH, diríjase a los hallazgos del colector",
+        "pl": "Fix GH wydania, adres repo- sprawdzacz ustalenia",
+        "uk": "Виправлення GH релізу, адреса repo-checker результати",
+        "zh-cn": "修复 GH 发布, 地址复检结果"
+      },
       "0.1.0": {
         "en": "initial release",
         "de": "erstausstrahlung",
