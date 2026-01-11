@@ -17,7 +17,7 @@
     "url": "https://github.com/OlliMartin/ioBroker.test-devices.git"
   },
   "engines": {
-    "node": ">= 22"
+    "node": ">= 20"
   },
   "dependencies": {
     "@iobroker/adapter-core": "^3.3.2",
