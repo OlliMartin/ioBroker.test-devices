@@ -10,7 +10,8 @@
   "homepage": "https://github.com/OlliMartin/ioBroker.test-devices",
   "license": "MIT",
   "keywords": [
-    "testing"
+    "testing",
+    "ioBroker"
   ],
   "repository": {
     "type": "git",
@@ -69,8 +70,5 @@
   "bugs": {
     "url": "https://github.com/OlliMartin/ioBroker.test-devices/issues"
   },
-  "readmeFilename": "README.md",
-  "mocha": {
-    "timeout": 30000
-  }
+  "readmeFilename": "README.md"
 }
