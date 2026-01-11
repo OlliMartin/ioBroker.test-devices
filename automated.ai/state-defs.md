@@ -47,16 +47,16 @@ There are a few wrappers available:
 | airCondition | VOLTAGE | value.voltage | V | number | Num[80..150#P1] |
 | blindButtons | BATTERY | value.battery | % | number | Num[0..100#P2] |
 | blindButtons | ERROR | indicator.error |  | string | 'YES' or 'NO' |
-| blindButtons | TILT_ACTUAL | value.tilt |  | number | TODO |
-| blindButtons | TILT_SET | level.tilt |  | number | TODO |
+| blindButtons | TILT_ACTUAL | value.tilt |  | number | Tilt angle in degrees (0=closed, 90=fully open) |
+| blindButtons | TILT_SET | level.tilt |  | number | Tilt angle in degrees (0=closed, 90=fully open) |
 | blindButtons | WORKING | indicator.working |  | string | 'YES' or 'NO' |
 | blinds | ACTUAL | value.blind | % | number | Num[0..100#P2] |
 | blinds | BATTERY | value.battery | % | number | Num[0..100#P2] |
 | blinds | ERROR | indicator.error |  | string | 'YES' or 'NO' |
 | blinds | SET | level.blind | % | number | Num[0..100#P2] |
 | blinds | SET | level.blind | % | number | Num[0..100#P2] |
-| blinds | TILT_ACTUAL | value.tilt |  | number | TODO |
-| blinds | TILT_SET | level.tilt |  | number | TODO |
+| blinds | TILT_ACTUAL | value.tilt |  | number | Tilt angle in degrees (0=closed, 90=fully open) |
+| blinds | TILT_SET | level.tilt |  | number | Tilt angle in degrees (0=closed, 90=fully open) |
 | blinds | WORKING | indicator.working |  | string | 'YES' or 'NO' |
 | button | BATTERY | value.battery | % | number | Num[0..100#P2] |
 | button | ERROR | indicator.error |  | string | 'YES' or 'NO' |
@@ -64,12 +64,12 @@ There are a few wrappers available:
 | buttonSensor | ERROR | indicator.error |  | string | 'YES' or 'NO' |
 | camera | BATTERY | value.battery | % | number | Num[0..100#P2] |
 | camera | ERROR | indicator.error |  | string | 'YES' or 'NO' |
-| camera | PTZ | level.camera.position |  | number | TODO |
-| camera | URL | link.camera |  | string | TODO |
-| camera | URL | link.camera |  | string | TODO |
+| camera | PTZ | level.camera.position |  | number | Pan/Tilt/Zoom position |
+| camera | URL | link.camera |  | string | Camera stream URL |
+| camera | URL | link.camera |  | string | Camera stream URL |
 | cie | BATTERY | value.battery | % | number | Num[0..100#P2] |
-| cie | CIE | level.color.cie |  | string | TODO |
-| cie | CIE | level.color.cie |  | string | TODO |
+| cie | CIE | level.color.cie |  | string | CIE 1931 color space coordinates (x,y) |
+| cie | CIE | level.color.cie |  | string | CIE 1931 color space coordinates (x,y) |
 | cie | CONSUMPTION | value.power.consumption | Wh | number | Num[20..500#P0] |
 | cie | CURRENT | value.current | mA | number | Num[100..500#P0] |
 | cie | DIMMER | level.dimmer | % | number | Num[0..100#P2] |
@@ -137,10 +137,10 @@ There are a few wrappers available:
 | illuminance | ERROR | indicator.error |  | string | 'YES' or 'NO' |
 | image | BATTERY | value.battery | % | number | Num[0..100#P2] |
 | image | ERROR | indicator.error |  | string | 'YES' or 'NO' |
-| image | URL | icon |  | string | TODO |
-| image | URL | icon |  | string | TODO |
-| info | ACTUAL | state |  | string | TODO |
-| info | ACTUAL | state |  | string | TODO |
+| image | URL | icon |  | string | Image URL |
+| image | URL | icon |  | string | Image URL |
+| info | ACTUAL | state |  | string | Device state information |
+| info | ACTUAL | state |  | string | Device state information |
 | info | BATTERY | value.battery | % | number | Num[0..100#P2] |
 | info | ERROR | indicator.error |  | string | 'YES' or 'NO' |
 | info | WORKING | indicator.working |  | string | 'YES' or 'NO' |
@@ -166,28 +166,28 @@ There are a few wrappers available:
 | location | LATITUDE | value.gps.latitude | ° | number | Num[-90..90#P5] |
 | location | LONGITUDE | value.gps.longitude | ° | number | Num[-180..180#P5] |
 | location | LONGITUDE | value.gps.longitude | ° | number | Num[-180..180#P5] |
-| location | RADIUS | value.gps.radius |  | number | TODO |
+| location | RADIUS | value.gps.radius |  | number | GPS accuracy radius in meters |
 | locationOne | ACCURACY | value.gps.accuracy |  | number | Num[1..50#P0] |
 | locationOne | BATTERY | value.battery | % | number | Num[0..100#P2] |
 | locationOne | ELEVATION | value.gps.elevation |  | number | Num[-100..4000#P0] |
 | locationOne | ERROR | indicator.error |  | string | 'YES' or 'NO' |
-| locationOne | GPS | value.gps |  | string | TODO |
-| locationOne | GPS | value.gps |  | string | TODO |
-| locationOne | RADIUS | value.gps.radius |  | number | TODO |
+| locationOne | GPS | value.gps |  | string | GPS coordinates (latitude,longitude) |
+| locationOne | GPS | value.gps |  | string | GPS coordinates (latitude,longitude) |
+| locationOne | RADIUS | value.gps.radius |  | number | GPS accuracy radius in meters |
 | lock | BATTERY | value.battery | % | number | Num[0..100#P2] |
 | lock | ERROR | indicator.error |  | string | 'YES' or 'NO' |
 | lock | WORKING | indicator.working |  | string | 'YES' or 'NO' |
 | mediaPlayer | ALBUM | media.album |  | string |  |
 | mediaPlayer | ARTIST | media.artist |  | string |  |
 | mediaPlayer | BATTERY | value.battery | % | number | Num[0..100#P2] |
-| mediaPlayer | COVER | media.cover |  | string | TODO |
+| mediaPlayer | COVER | media.cover |  | string | Album/media cover art URL |
 | mediaPlayer | DURATION | media.duration | sec | number | Num[0..300#P0] |
 | mediaPlayer | ELAPSED | media.elapsed | sec | number | Num[0..300#P0] |
 | mediaPlayer | EPISODE | media.episode |  | string |  |
 | mediaPlayer | ERROR | indicator.error |  | string | 'YES' or 'NO' |
-| mediaPlayer | REPEAT | media.mode.repeat |  | number | TODO |
+| mediaPlayer | REPEAT | media.mode.repeat |  | number | Repeat mode (0=off, 1=repeat all, 2=repeat one) |
 | mediaPlayer | SEASON | media.season |  | string |  |
-| mediaPlayer | SEEK | media.seek |  | number | TODO |
+| mediaPlayer | SEEK | media.seek |  | number | Seek position in seconds |
 | mediaPlayer | TITLE | media.title |  | string |  |
 | mediaPlayer | TRACK | media.track |  | string |  |
 | mediaPlayer | VOLUME | level.volume | % | number | Num[0..100#P2] |
@@ -226,8 +226,8 @@ There are a few wrappers available:
 | rgbSingle | ELECTRIC_POWER | value.power | W | number | Num[20..500#P0] |
 | rgbSingle | ERROR | indicator.error |  | string | 'YES' or 'NO' |
 | rgbSingle | FREQUENCY | value.frequency | Hz | number | Num[5000..15000#P0] |
-| rgbSingle | RGB | level.color.rgb |  | string | TODO |
-| rgbSingle | RGB | level.color.rgb |  | string | TODO |
+| rgbSingle | RGB | level.color.rgb |  | string | RGB color in hex format (#RRGGBB) |
+| rgbSingle | RGB | level.color.rgb |  | string | RGB color in hex format (#RRGGBB) |
 | rgbSingle | TEMPERATURE | level.color.temperature | °K | number | Num[2000..6500#P0] |
 | rgbSingle | TRANSITION_TIME | time.span | ms | number | Num[0..10000#P0] |
 | rgbSingle | VOLTAGE | value.voltage | V | number | Num[80..150#P1] |
@@ -239,8 +239,8 @@ There are a few wrappers available:
 | rgbwSingle | ELECTRIC_POWER | value.power | W | number | Num[20..500#P0] |
 | rgbwSingle | ERROR | indicator.error |  | string | 'YES' or 'NO' |
 | rgbwSingle | FREQUENCY | value.frequency | Hz | number | Num[5000..15000#P0] |
-| rgbwSingle | RGBW | level.color.rgbw |  | string | TODO |
-| rgbwSingle | RGBW | level.color.rgbw |  | string | TODO |
+| rgbwSingle | RGBW | level.color.rgbw |  | string | RGBW color in hex format (#RRGGBBWW) |
+| rgbwSingle | RGBW | level.color.rgbw |  | string | RGBW color in hex format (#RRGGBBWW) |
 | rgbwSingle | TEMPERATURE | level.color.temperature | °K | number | Num[2000..6500#P0] |
 | rgbwSingle | TRANSITION_TIME | time.span | ms | number | Num[0..10000#P0] |
 | rgbwSingle | VOLTAGE | value.voltage | V | number | Num[80..150#P1] |
@@ -261,14 +261,14 @@ There are a few wrappers available:
 | thermostat | BATTERY | value.battery | % | number | Num[0..100#P2] |
 | thermostat | ERROR | indicator.error |  | string | 'YES' or 'NO' |
 | thermostat | HUMIDITY | value.humidity | % | number | Num[0..100#P2] |
-| thermostat | MODE | level.mode.thermostat |  | number | TODO |
+| thermostat | MODE | level.mode.thermostat |  | number | Thermostat mode (0=off, 1=heat, 2=cool, 3=auto) |
 | thermostat | SET | level.temperature | °C | number | Num[-5..35#P1] |
 | thermostat | SET | level.temperature | °C | number | Num[-5..35#P1] |
 | thermostat | WORKING | indicator.working |  | string | 'YES' or 'NO' |
 | vacuumCleaner | BRUSH | value.usage.brush | % | number | Num[0..100#P2] |
 | vacuumCleaner | ERROR | indicator.error |  | string | 'YES' or 'NO' |
 | vacuumCleaner | FILTER | value.usage.filter | % | number | Num[0..100#P2] |
-| vacuumCleaner | MAP_BASE64 | vacuum.map.base64 |  | string | TODO |
+| vacuumCleaner | MAP_BASE64 | vacuum.map.base64 |  | string | Vacuum cleaner map as base64 encoded image |
 | vacuumCleaner | MODE | level.mode.cleanup |  | number | Num[0..3#P0] |
 | vacuumCleaner | MODE | level.mode.cleanup |  | number | Num[0..3#P0] |
 | vacuumCleaner | SENSORS | value.usage.sensors | % | number | Num[0..100#P2] |
@@ -276,7 +276,7 @@ There are a few wrappers available:
 | vacuumCleaner | STATE | value.state |  | number | Num[0..5#P0] (0=idle,1=docked,2=error,3=cleaning,4=paused,5=returning) |
 | vacuumCleaner | WASTE | value.waste | % | number | Num[0..100#P2] |
 | vacuumCleaner | WATER | value.water | % | number | Num[0..100#P2] |
-| vacuumCleaner | WORK_MODE | level.mode.work |  | number | TODO |
+| vacuumCleaner | WORK_MODE | level.mode.work |  | number | Work mode (0=auto, 1=spot, 2=edge, 3=room) |
 | volume | ACTUAL | value.volume | % | number | Num[0..100#P2] |
 | volume | BATTERY | value.battery | % | number | Num[0..100#P2] |
 | volume | ERROR | indicator.error |  | string | 'YES' or 'NO' |
@@ -289,59 +289,59 @@ There are a few wrappers available:
 | volumeGroup | SET | level.volume.group | % | number | Num[0..100#P2] |
 | volumeGroup | SET | level.volume.group | % | number | Num[0..100#P2] |
 | volumeGroup | WORKING | indicator.working |  | string | 'YES' or 'NO' |
-| warning | DESC | weather.state |  | string | TODO |
-| warning | END | date.end |  | string | TODO |
-| warning | ICON | weather.chart.url |  | string | TODO |
-| warning | INFO | weather.title |  | string | TODO |
-| warning | LEVEL | value.warning |  | string | TODO |
-| warning | LEVEL | value.warning |  | string | TODO |
-| warning | START | date.start |  | string | TODO |
-| warning | TITLE | weather.title.short |  | string | TODO |
+| warning | DESC | weather.state |  | string | Weather warning description |
+| warning | END | date.end |  | string | Warning start/end time (ISO 8601) |
+| warning | ICON | weather.chart.url |  | string | Weather icon URL |
+| warning | INFO | weather.title |  | string | Warning title/info |
+| warning | LEVEL | value.warning |  | string | Warning severity level |
+| warning | LEVEL | value.warning |  | string | Warning severity level |
+| warning | START | date.start |  | string | Warning start/end time (ISO 8601) |
+| warning | TITLE | weather.title.short |  | string | Warning title/info |
 | weatherCurrent | ACTUAL | value.temperature | °C | number | Num[-5..35#P1] |
 | weatherCurrent | ACTUAL | value.temperature | °C | number | Num[-5..35#P1] |
 | weatherCurrent | BATTERY | value.battery | % | number | Num[0..100#P2] |
 | weatherCurrent | ERROR | indicator.error |  | string | 'YES' or 'NO' |
 | weatherCurrent | HUMIDITY | value.humidity | % | number | Num[0..100#P2] |
-| weatherCurrent | ICON | weather.icon |  | string | TODO |
-| weatherCurrent | ICON | weather.icon |  | string | TODO |
+| weatherCurrent | ICON | weather.icon |  | string | Weather icon URL |
+| weatherCurrent | ICON | weather.icon |  | string | Weather icon URL |
 | weatherCurrent | PRECIPITATION_CHANCE | value.precipitation.chance | % | number | Num[0..100#P2] |
-| weatherCurrent | PRECIPITATION_TYPE | value.precipitation.type |  | number | TODO |
+| weatherCurrent | PRECIPITATION_TYPE | value.precipitation.type |  | number | Precipitation type (0=none, 1=rain, 2=snow, 3=sleet, 4=hail) |
 | weatherCurrent | PRESSURE | value.pressure | mbar | number | Num[950..1050#P1] |
-| weatherCurrent | PRESSURE_TENDENCY | value.pressure.tendency |  | string | TODO |
+| weatherCurrent | PRESSURE_TENDENCY | value.pressure.tendency |  | string | Barometric pressure tendency |
 | weatherCurrent | REAL_FEEL_TEMPERATURE | value.temperature.windchill | °C | number | Num[-5..35#P1] |
 | weatherCurrent | UV | value.uv |  | number | Num[0..11#P0] |
-| weatherCurrent | WEATHER | weather.state |  | string | TODO |
+| weatherCurrent | WEATHER | weather.state |  | string | Weather state description |
 | weatherCurrent | WIND_DIRECTION | value.direction.wind | ° | string | Num[0..359#P1] [TYPE ADJUSTED] |
 | weatherCurrent | WIND_GUST | value.speed.wind.gust | km/h | number | Num[5..20#P2] |
 | weatherCurrent | WIND_SPEED | value.speed.wind$ | km/h | number | Num[5..20#P2] |
-| weatherForecast | DATE | date.forecast.0 |  | string | TODO |
-| weatherForecast | DOW | dayofweek.forecast.0 |  | string | TODO |
-| weatherForecast | FEELS_LIKE | value.temperature.feelslike.forecast.0 |  | number | TODO |
-| weatherForecast | FORECAST_CHART | weather.chart.url.forecast |  | string | TODO |
-| weatherForecast | HISTORY_CHART | weather.chart.url |  | string | TODO |
-| weatherForecast | HUMIDITY | value.humidity.forecast.0 |  | number | TODO |
-| weatherForecast | ICON | weather.icon.forecast.0 |  | string | TODO |
-| weatherForecast | ICON | weather.icon.forecast.0 |  | string | TODO |
-| weatherForecast | LOCATION | location |  | string | TODO |
-| weatherForecast | PRECIPITATION | value.precipitation.forecast.0 |  | number | TODO |
-| weatherForecast | PRECIPITATION_CHANCE | value.precipitation.forecast.0 |  | number | TODO |
-| weatherForecast | PRESSURE | value.pressure.forecast.0 |  | number | TODO |
-| weatherForecast | STATE | weather.state.forecast.0 |  | string | TODO |
-| weatherForecast | TEMP | value.temperature.forecast.0 |  | number | TODO |
-| weatherForecast | TEMP_MAX | value.temperature.max.forecast.0 |  | number | TODO |
-| weatherForecast | TEMP_MAX | value.temperature.max.forecast.0 |  | number | TODO |
-| weatherForecast | TEMP_MIN | value.temperature.min.forecast.0 |  | number | TODO |
-| weatherForecast | TEMP_MIN | value.temperature.min.forecast.0 |  | number | TODO |
-| weatherForecast | TIME_SUNRISE | date.sunrise |  | string | TODO |
-| weatherForecast | TIME_SUNSET | date.sunset |  | string | TODO |
-| weatherForecast | WIND_CHILL | value.temperature.windchill.forecast.0 |  | number | TODO |
-| weatherForecast | WIND_DIRECTION | value.direction.wind.forecast.0 |  | number | TODO |
-| weatherForecast | WIND_DIRECTION_STR | weather.direction.wind.forecast.0 |  | string | TODO |
-| weatherForecast | WIND_ICON | weather.icon.wind.forecast.0 |  | string | TODO |
-| weatherForecast | WIND_SPEED | value.speed.wind.forecast.0 |  | number | TODO |
+| weatherForecast | DATE | date.forecast.0 |  | string | Forecast date (YYYY-MM-DD) |
+| weatherForecast | DOW | dayofweek.forecast.0 |  | string | Day of week |
+| weatherForecast | FEELS_LIKE | value.temperature.feelslike.forecast.0 |  | number | Feels like temperature in °C |
+| weatherForecast | FORECAST_CHART | weather.chart.url.forecast |  | string | Weather chart URL |
+| weatherForecast | HISTORY_CHART | weather.chart.url |  | string | Weather chart URL |
+| weatherForecast | HUMIDITY | value.humidity.forecast.0 |  | number | Forecast humidity % |
+| weatherForecast | ICON | weather.icon.forecast.0 |  | string | Weather icon URL |
+| weatherForecast | ICON | weather.icon.forecast.0 |  | string | Weather icon URL |
+| weatherForecast | LOCATION | location |  | string | Location name |
+| weatherForecast | PRECIPITATION | value.precipitation.forecast.0 |  | number | Precipitation amount (mm) or chance (%) |
+| weatherForecast | PRECIPITATION_CHANCE | value.precipitation.forecast.0 |  | number | Precipitation amount (mm) or chance (%) |
+| weatherForecast | PRESSURE | value.pressure.forecast.0 |  | number | Forecast pressure in mbar |
+| weatherForecast | STATE | weather.state.forecast.0 |  | string | Weather state description |
+| weatherForecast | TEMP | value.temperature.forecast.0 |  | number | Forecast temperature in °C |
+| weatherForecast | TEMP_MAX | value.temperature.max.forecast.0 |  | number | Forecast temperature in °C |
+| weatherForecast | TEMP_MAX | value.temperature.max.forecast.0 |  | number | Forecast temperature in °C |
+| weatherForecast | TEMP_MIN | value.temperature.min.forecast.0 |  | number | Forecast temperature in °C |
+| weatherForecast | TEMP_MIN | value.temperature.min.forecast.0 |  | number | Forecast temperature in °C |
+| weatherForecast | TIME_SUNRISE | date.sunrise |  | string | Sunrise/sunset time (ISO 8601) |
+| weatherForecast | TIME_SUNSET | date.sunset |  | string | Sunrise/sunset time (ISO 8601) |
+| weatherForecast | WIND_CHILL | value.temperature.windchill.forecast.0 |  | number | Wind chill temperature in °C |
+| weatherForecast | WIND_DIRECTION | value.direction.wind.forecast.0 |  | number | Wind direction in degrees |
+| weatherForecast | WIND_DIRECTION_STR | weather.direction.wind.forecast.0 |  | string | Wind direction (N, NE, E, SE, S, SW, W, NW) |
+| weatherForecast | WIND_ICON | weather.icon.wind.forecast.0 |  | string | Wind direction icon URL |
+| weatherForecast | WIND_SPEED | value.speed.wind.forecast.0 |  | number | Wind speed in km/h |
 | window | BATTERY | value.battery | % | number | Num[0..100#P2] |
 | window | ERROR | indicator.error |  | string | 'YES' or 'NO' |
-| windowTilt | ACTUAL | value.window |  | number | TODO |
-| windowTilt | ACTUAL | value.window |  | number | TODO |
+| windowTilt | ACTUAL | value.window |  | number | Window state (0=closed, 1=tilted, 2=open) |
+| windowTilt | ACTUAL | value.window |  | number | Window state (0=closed, 1=tilted, 2=open) |
 | windowTilt | BATTERY | value.battery | % | number | Num[0..100#P2] |
 | windowTilt | ERROR | indicator.error |  | string | 'YES' or 'NO' |
