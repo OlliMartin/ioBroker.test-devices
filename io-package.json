@@ -77,8 +77,8 @@
 		]
 	},
 	"native": {
-		"option1": true,
-		"option2": "42"
+		"acknowledgeStatesOnStart": true,
+		"updateWriteableStates": true
 	},
 	"objects": [],
 	"instanceObjects": [
@@ -95,7 +95,7 @@
 			"type": "state",
 			"common": {
 				"role": "indicator.connected",
-				"name": "If device states are created",
+				"name": "Indicates if state-creation is finished",
 				"type": "boolean",
 				"read": true,
 				"write": false,

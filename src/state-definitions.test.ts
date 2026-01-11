@@ -52,7 +52,15 @@ describe('createDesiredStateDefinitions', () => {
 			trackedValueGenerators.push({ stateDef: sd, valueGenerators: vg });
 		};
 
-		const stateDefinitions = createDesiredStateDefinitions('test-devices.0', {}, deviceMetadata, fallbackCb);
+		const stateDefinitions = createDesiredStateDefinitions(
+			'test-devices.0',
+			{
+				acknowledgeStatesOnStart: true,
+				updateWriteableStates: true,
+			},
+			deviceMetadata,
+			fallbackCb,
+		);
 
 		return { trackedValueGenerators, stateDefinitions };
 	};

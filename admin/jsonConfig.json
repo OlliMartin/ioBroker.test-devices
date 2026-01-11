@@ -2,5 +2,27 @@
 	"i18n": true,
 	"type": "panel",
 	"items": {
+		"acknowledgeStatesOnStart": {
+			"type": "checkbox",
+			"label": "Acknowledge all States on Start",
+			"help": "If enabled, all generated/simulated states will be initially acknowledged on adapter start.",
+			"newLine": true,
+			"xs": 12,
+			"sm": 12,
+			"md": 6,
+			"lg": 6,
+			"xl": 6
+		},
+		"updateWriteableStates": {
+			"type": "checkbox",
+			"label": "Simulate writeable states",
+			"help": "If enabled, writeable states will receive value updates if triggered through the UI or adapter message.",
+			"newLine": false,
+			"xs": 12,
+			"sm": 12,
+			"md": 6,
+			"lg": 6,
+			"xl": 6
+		}
 	}
 }

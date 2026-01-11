@@ -10,6 +10,16 @@ export const crossProduct = <A, B>(as: readonly A[], bs: readonly B[]): Array<re
 	return result;
 };
 
+export const parseGenerationType = (generationType: string): ioBroker.DeviceStatesGenerationType | undefined => {
+	if (generationType === 'all') {
+		return 'all';
+	} else if (generationType === 'required') {
+		return 'required';
+	}
+
+	return undefined;
+};
+
 export const getStateType = (state: ExternalDetectorState, fallback?: ioBroker.CommonType): ioBroker.CommonType => {
 	return Array.isArray(state.type) ? state.type[0] : (state.type ?? fallback ?? 'string');
 };

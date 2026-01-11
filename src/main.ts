@@ -1,7 +1,7 @@
 import * as utils from '@iobroker/adapter-core';
 import ChannelDetector, { type DetectOptions, type ExternalDetectorState } from '@iobroker/type-detector';
 import { getDeviceMetadata } from './device-metadata';
-import { crossProduct, printMissingDefaultRoleMarkdown } from './utils';
+import { crossProduct, parseGenerationType, printMissingDefaultRoleMarkdown } from './utils';
 import { createDesiredStateDefinitions } from './state-definitions';
 import { generationTypes, GetDeviceFolderName, GetTriggerFolderName } from './constants';
 import { getFallbackValueGenerator } from './value-generators';
@@ -75,17 +75,26 @@ class TestDevices extends utils.Adapter {
 
 		this.log.info(`Stored state count: ${this.stateNames.length}.`);
 
+		this.subscribeStates(`${this.namespace}.*`);
+
+		if (this.config.acknowledgeStatesOnStart) {
+			await this.updateAllStates();
+		}
+
 		this.setConnected(true);
 		this.log.info(`Start-up finished within ${Date.now() - startMs}ms.`);
-
-		this.subscribeStates(`${this.namespace}.*`);
 	}
 
-	private readonly validCommands: string[] = ['VERIFY_DEVICE_TYPE', 'GET_DEVICE_STATES'];
+	private readonly validCommands: string[] = [
+		'VERIFY_DEVICE_TYPE',
+		'GET_DEVICE_STATES',
+		'SIMULATE_DEVICE_CHANGES',
+		'SIMULATE_SINGLE_DEVICE_CHANGE',
+	];
 
 	private readonly triggerChangeRegex: RegExp;
 	private readonly deviceStateChangeRegex: RegExp;
-	private readonly setReadOnlyStatesOnly: boolean = false; // TODO OMA 2026-01-10: Read from config?
+
 	private async onStateChange(id: string, state: ioBroker.State | null | undefined): Promise<void> {
 		if (!state || state.ack) {
 			return;
@@ -98,28 +107,16 @@ class TestDevices extends utils.Adapter {
 				return;
 			}
 
-			const genType = match[2];
+			const genType = parseGenerationType(match[2]);
 			const device = match[3];
+			if (!genType) {
+				this.log.warn(`Unknown generation type: '${match[2]}'. Refusing to process trigger.`);
+				return; // I guess it's fine to not ACK this?!
+			}
 
-			const allStates = Object.values(this.stateLookup).filter(
-				sd => sd.generationType === genType && sd.device.name === device,
-			);
-			const relevantStates = allStates.filter(sd => !this.setReadOnlyStatesOnly || sd.isReadOnly);
+			this.log.debug(`Received trigger for ${id} -> ${genType}:${device}.`);
 
-			this.log.debug(
-				`Received trigger for ${id} -> ${genType}:${device}. ${relevantStates.length} out of ${allStates.length} are relevant (read only).`,
-			);
-
-			const handleSingleState = async (sd: ioBroker.DeviceStateDefinition): Promise<void> => {
-				const currentValue = await this.getStateAsync(sd.stateFqn);
-				const valueGen = sd.valueGenerator ?? getFallbackValueGenerator();
-				const nextValue = valueGen(sd, currentValue?.val);
-
-				await this.setState(sd.stateFqn, { val: nextValue, ack: true });
-			};
-
-			await Promise.all(relevantStates.map(handleSingleState));
-
+			await this.simulateSingleDeviceStatesAsync(genType, device);
 			//                               v ACK
 			await this.setState(id, state, true);
 			this.log.debug(`Trigger processed in ${Date.now() - startMs}ms.`);
@@ -145,10 +142,37 @@ class TestDevices extends utils.Adapter {
 		} else if (message.command === 'GET_DEVICE_STATES') {
 			this.log.debug('Collecting device states.');
 			this.sendTo(message.from, message.command, this.stateNames, message.callback);
-		} else if (message.command === 'SIMULATE_SINGLE_DEVICE_CHANGE') {
-			this.log.debug('Collecting device states.');
 		} else if (message.command === 'SIMULATE_DEVICE_CHANGES') {
-			this.log.debug('Collecting device states.');
+			await this.updateAllStates();
+			this.sendTo(message.from, message.command, 'SUCCESS', message.callback);
+		} else if (message.command === 'SIMULATE_SINGLE_DEVICE_CHANGE') {
+			const generationTypeUntyped = message.message.generationType;
+			const deviceName = message.message.device;
+
+			const sendInvalidPayloadResponse = (msg: string): void =>
+				this.sendTo(message.from, message.command, `INVALID_PAYLOAD:${msg}`, message.callback);
+
+			if (!generationTypeUntyped || typeof generationTypeUntyped !== 'string') {
+				sendInvalidPayloadResponse(
+					`Expected property 'generationType' to be one of [${generationTypes.join(', ')}].`,
+				);
+				return;
+			}
+			const generationType = parseGenerationType(generationTypeUntyped);
+			if (!generationType) {
+				sendInvalidPayloadResponse(
+					`Expected property 'generationType' to be one of [${generationTypes.join(', ')}].`,
+				);
+				return;
+			}
+
+			if (!deviceName || typeof deviceName !== 'string') {
+				sendInvalidPayloadResponse(`Expected property 'device' to be a simple string.`);
+				return;
+			}
+
+			await this.simulateSingleDeviceStatesAsync(generationType, deviceName);
+			this.sendTo(message.from, message.command, 'SUCCESS', message.callback);
 		}
 	}
 
@@ -290,6 +314,42 @@ class TestDevices extends utils.Adapter {
 		}
 
 		return objResult;
+	}
+
+	private async updateAllStates(): Promise<void> {
+		const startMs = Date.now();
+		const sem = new Semaphore(16);
+		this.log.debug(`Updating value of all states. Expecting ${this.stateNames.length} updates.`);
+
+		const promises = crossProduct(generationTypes, this.validDevices).map(([genType, device]) =>
+			sem.with(() => this.simulateSingleDeviceStatesAsync(genType, device.name)),
+		);
+
+		const updateCounts = await Promise.all(promises);
+		const totalUpdateCount = updateCounts.reduce((prev, curr) => prev + curr, 0);
+
+		this.log.info(`Updated/Simulated ${totalUpdateCount} states in ${Date.now() - startMs}ms. (Actual Count)`);
+	}
+
+	private async simulateSingleDeviceStatesAsync(
+		genType: ioBroker.DeviceStatesGenerationType,
+		deviceName: string,
+	): Promise<number> {
+		const allStates = Object.values(this.stateLookup).filter(
+			sd => sd.generationType === genType && sd.device.name === deviceName,
+		);
+		const relevantStates = allStates.filter(sd => this.config.updateWriteableStates || sd.isReadOnly);
+
+		const handleSingleState = async (sd: ioBroker.DeviceStateDefinition): Promise<void> => {
+			const currentValue = await this.getStateAsync(sd.stateFqn);
+			const valueGen = sd.valueGenerator ?? getFallbackValueGenerator();
+			const nextValue = valueGen(sd, currentValue?.val);
+
+			await this.setState(sd.stateFqn, { val: nextValue, ack: true });
+		};
+
+		await Promise.all(relevantStates.map(handleSingleState));
+		return relevantStates.length;
 	}
 
 	private async verifyCreatedDeviceAsync(deviceType: string): Promise<boolean> {

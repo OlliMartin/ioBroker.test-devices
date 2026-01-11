@@ -1,3 +1,9 @@
 {
-	"test-devices adapter settings": "Adapter settings for test-devices"
+	"test-devices adapter settings": "Adapter settings for Test Device Simulation",
+	
+	"Acknowledge all States on Start": "Acknowledge all States on Start",
+	"If enabled, all generated/simulated states will be initially acknowledged on adapter start.": "If enabled, all generated/simulated states will be initially acknowledged on adapter start.",
+	
+	"Simulate writeable states": "Simulate writeable states",
+	"If enabled, writeable states will receive value updates if triggered through the UI or adapter message.": "If enabled, writeable states will receive value updates if triggered through the UI or adapter message."
 }

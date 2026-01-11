@@ -5,7 +5,10 @@ import { type ExternalDetectorState, type Types } from '@iobroker/type-detector'
 
 declare global {
 	namespace ioBroker {
-		interface AdapterConfig {}
+		interface AdapterConfig {
+			acknowledgeStatesOnStart: boolean;
+			updateWriteableStates: boolean;
+		}
 
 		type DeviceDefinition = {
 			states: ExternalDetectorState[];

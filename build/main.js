@@ -80,15 +80,21 @@ class TestDevices extends utils.Adapter {
       void this.getObjectsCachedAsync();
     }
     this.log.info(`Stored state count: ${this.stateNames.length}.`);
+    this.subscribeStates(`${this.namespace}.*`);
+    if (this.config.acknowledgeStatesOnStart) {
+      await this.updateAllStates();
+    }
     this.setConnected(true);
     this.log.info(`Start-up finished within ${Date.now() - startMs}ms.`);
-    this.subscribeStates(`${this.namespace}.*`);
   }
-  validCommands = ["VERIFY_DEVICE_TYPE", "GET_DEVICE_STATES"];
+  validCommands = [
+    "VERIFY_DEVICE_TYPE",
+    "GET_DEVICE_STATES",
+    "SIMULATE_DEVICE_CHANGES",
+    "SIMULATE_SINGLE_DEVICE_CHANGE"
+  ];
   triggerChangeRegex;
   deviceStateChangeRegex;
-  setReadOnlyStatesOnly = false;
-  // TODO OMA 2026-01-10: Read from config?
   async onStateChange(id, state) {
     if (!state || state.ack) {
       return;
@@ -99,23 +105,14 @@ class TestDevices extends utils.Adapter {
       if (!match || match.length < 4) {
         return;
       }
-      const genType = match[2];
+      const genType = (0, import_utils.parseGenerationType)(match[2]);
       const device = match[3];
-      const allStates = Object.values(this.stateLookup).filter(
-        (sd) => sd.generationType === genType && sd.device.name === device
-      );
-      const relevantStates = allStates.filter((sd) => !this.setReadOnlyStatesOnly || sd.isReadOnly);
-      this.log.debug(
-        `Received trigger for ${id} -> ${genType}:${device}. ${relevantStates.length} out of ${allStates.length} are relevant (read only).`
-      );
-      const handleSingleState = async (sd) => {
-        var _a;
-        const currentValue = await this.getStateAsync(sd.stateFqn);
-        const valueGen = (_a = sd.valueGenerator) != null ? _a : (0, import_value_generators.getFallbackValueGenerator)();
-        const nextValue = valueGen(sd, currentValue == null ? void 0 : currentValue.val);
-        await this.setState(sd.stateFqn, { val: nextValue, ack: true });
-      };
-      await Promise.all(relevantStates.map(handleSingleState));
+      if (!genType) {
+        this.log.warn(`Unknown generation type: '${match[2]}'. Refusing to process trigger.`);
+        return;
+      }
+      this.log.debug(`Received trigger for ${id} -> ${genType}:${device}.`);
+      await this.simulateSingleDeviceStatesAsync(genType, device);
       await this.setState(id, state, true);
       this.log.debug(`Trigger processed in ${Date.now() - startMs}ms.`);
     }
@@ -137,10 +134,32 @@ class TestDevices extends utils.Adapter {
     } else if (message.command === "GET_DEVICE_STATES") {
       this.log.debug("Collecting device states.");
       this.sendTo(message.from, message.command, this.stateNames, message.callback);
-    } else if (message.command === "SIMULATE_SINGLE_DEVICE_CHANGE") {
-      this.log.debug("Collecting device states.");
     } else if (message.command === "SIMULATE_DEVICE_CHANGES") {
-      this.log.debug("Collecting device states.");
+      await this.updateAllStates();
+      this.sendTo(message.from, message.command, "SUCCESS", message.callback);
+    } else if (message.command === "SIMULATE_SINGLE_DEVICE_CHANGE") {
+      const generationTypeUntyped = message.message.generationType;
+      const deviceName = message.message.device;
+      const sendInvalidPayloadResponse = (msg) => this.sendTo(message.from, message.command, `INVALID_PAYLOAD:${msg}`, message.callback);
+      if (!generationTypeUntyped || typeof generationTypeUntyped !== "string") {
+        sendInvalidPayloadResponse(
+          `Expected property 'generationType' to be one of [${import_constants.generationTypes.join(", ")}].`
+        );
+        return;
+      }
+      const generationType = (0, import_utils.parseGenerationType)(generationTypeUntyped);
+      if (!generationType) {
+        sendInvalidPayloadResponse(
+          `Expected property 'generationType' to be one of [${import_constants.generationTypes.join(", ")}].`
+        );
+        return;
+      }
+      if (!deviceName || typeof deviceName !== "string") {
+        sendInvalidPayloadResponse(`Expected property 'device' to be a simple string.`);
+        return;
+      }
+      await this.simulateSingleDeviceStatesAsync(generationType, deviceName);
+      this.sendTo(message.from, message.command, "SUCCESS", message.callback);
     }
   }
   async createTopLevelFoldersAsync() {
@@ -251,6 +270,32 @@ class TestDevices extends utils.Adapter {
       this.objectCache = objResult;
     }
     return objResult;
+  }
+  async updateAllStates() {
+    const startMs = Date.now();
+    const sem = new Semaphore(16);
+    this.log.debug(`Updating value of all states. Expecting ${this.stateNames.length} updates.`);
+    const promises = (0, import_utils.crossProduct)(import_constants.generationTypes, this.validDevices).map(
+      ([genType, device]) => sem.with(() => this.simulateSingleDeviceStatesAsync(genType, device.name))
+    );
+    const updateCounts = await Promise.all(promises);
+    const totalUpdateCount = updateCounts.reduce((prev, curr) => prev + curr, 0);
+    this.log.info(`Updated/Simulated ${totalUpdateCount} states in ${Date.now() - startMs}ms. (Actual Count)`);
+  }
+  async simulateSingleDeviceStatesAsync(genType, deviceName) {
+    const allStates = Object.values(this.stateLookup).filter(
+      (sd) => sd.generationType === genType && sd.device.name === deviceName
+    );
+    const relevantStates = allStates.filter((sd) => this.config.updateWriteableStates || sd.isReadOnly);
+    const handleSingleState = async (sd) => {
+      var _a;
+      const currentValue = await this.getStateAsync(sd.stateFqn);
+      const valueGen = (_a = sd.valueGenerator) != null ? _a : (0, import_value_generators.getFallbackValueGenerator)();
+      const nextValue = valueGen(sd, currentValue == null ? void 0 : currentValue.val);
+      await this.setState(sd.stateFqn, { val: nextValue, ack: true });
+    };
+    await Promise.all(relevantStates.map(handleSingleState));
+    return relevantStates.length;
   }
   async verifyCreatedDeviceAsync(deviceType) {
     const objects = await this.getObjectsCachedAsync();

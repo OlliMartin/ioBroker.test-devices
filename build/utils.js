@@ -20,6 +20,7 @@ var utils_exports = {};
 __export(utils_exports, {
   crossProduct: () => crossProduct,
   getStateType: () => getStateType,
+  parseGenerationType: () => parseGenerationType,
   printMissingDefaultRoleMarkdown: () => printMissingDefaultRoleMarkdown,
   summarizeStateDefinition: () => summarizeStateDefinition
 });
@@ -32,6 +33,14 @@ const crossProduct = (as, bs) => {
     }
   }
   return result;
+};
+const parseGenerationType = (generationType) => {
+  if (generationType === "all") {
+    return "all";
+  } else if (generationType === "required") {
+    return "required";
+  }
+  return void 0;
 };
 const getStateType = (state, fallback) => {
   var _a, _b;
@@ -54,6 +63,7 @@ const printMissingDefaultRoleMarkdown = (states) => {
 0 && (module.exports = {
   crossProduct,
   getStateType,
+  parseGenerationType,
   printMissingDefaultRoleMarkdown,
   summarizeStateDefinition
 });
