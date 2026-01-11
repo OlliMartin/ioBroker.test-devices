@@ -1,111 +1,124 @@
 {
-	"common": {
-		"name": "test-devices",
-		"version": "0.0.1",
-		"news": {
-			"0.0.1": {
-				"en": "initial release",
-				"de": "Erstveröffentlichung",
-				"ru": "Начальная версия",
-				"pt": "lançamento inicial",
-				"nl": "Eerste uitgave",
-				"fr": "Première version",
-				"it": "Versione iniziale",
-				"es": "Versión inicial",
-				"pl": "Pierwsze wydanie",
-				"uk": "Початкова версія",
-				"zh-cn": "首次出版"
-			}
-		},
-		"titleLang": {
-			"en": "Test Devices",
-			"de": "Testgeräte",
-			"ru": "Тестовые устройства",
-			"pt": "Dispositivos de teste",
-			"nl": "Apparaten testen",
-			"fr": "Appareils de test",
-			"it": "Dispositivi di prova",
-			"es": "Dispositivos de prueba",
-			"pl": "Urządzenia testowe",
-			"uk": "Тестові пристрої",
-			"zh-cn": "测试设备"
-		},
-		"desc": {
-			"en": "Adapter to generate and simulate testing devices of different roles",
-			"de": "Adapter zur Generierung und Simulation von Testgeräten unterschiedlicher Rollen",
-			"ru": "Адаптер для создания и моделирования тестовых устройств различного назначения",
-			"pt": "Adaptador para gerar e simular dispositivos de teste de diferentes funções",
-			"nl": "Adapter voor het genereren en simuleren van testapparaten met verschillende rollen",
-			"fr": "Adaptateur pour générer et simuler des appareils de test de différents rôles",
-			"it": "Adattatore per generare e simulare dispositivi di test di diversi ruoli",
-			"es": "Adaptador para generar y simular dispositivos de prueba de diferentes roles.",
-			"pl": "Adapter do generowania i symulowania urządzeń testowych o różnych rolach",
-			"uk": "Адаптер для створення та імітації тестових пристроїв різного призначення",
-			"zh-cn": "用于生成和模拟不同角色的测试设备的适配器"
-		},
-		"authors": [
-			"OlliMartin <oss@ollimart.in>"
-		],
-		"keywords": [
-			"testing"
-		],
-		"licenseInformation": {
-			"type": "free",
-			"license": "MIT"
-		},
-		"platform": "Javascript/Node.js",
-		"icon": "test-devices.png",
-		"enabled": true,
-		"extIcon": "https://raw.githubusercontent.com/OlliMartin/ioBroker.test-devices/main/admin/test-devices.png",
-		"readme": "https://github.com/OlliMartin/ioBroker.test-devices/blob/main/README.md",
-		"loglevel": "info",
-		"messagebox": true,
-		"tier": 3,
-		"mode": "daemon",
-		"type": "utility",
-		"compact": true,
-		"connectionType": "local",
-		"dataSource": "push",
-		"adminUI": {
-			"config": "json"
-		},
-		"dependencies": [
-			{
-				"js-controller": ">=6.0.11"
-			}
-		],
-		"globalDependencies": [
-			{
-				"admin": ">=7.0.23"
-			}
-		]
-	},
-	"native": {
-		"acknowledgeStatesOnStart": true,
-		"updateWriteableStates": true
-	},
-	"objects": [],
-	"instanceObjects": [
-		{
-			"_id": "info",
-			"type": "channel",
-			"common": {
-				"name": "Information"
-			},
-			"native": {}
-		},
-		{
-			"_id": "info.connection",
-			"type": "state",
-			"common": {
-				"role": "indicator.connected",
-				"name": "Indicates if state-creation is finished",
-				"type": "boolean",
-				"read": true,
-				"write": false,
-				"def": false
-			},
-			"native": {}
-		}
-	]
+  "common": {
+    "name": "test-devices",
+    "version": "0.1.0",
+    "news": {
+      "0.1.0": {
+        "en": "initial release",
+        "de": "erstausstrahlung",
+        "ru": "первоначальное освобождение",
+        "pt": "libertação inicial",
+        "nl": "eerste release",
+        "fr": "libération initiale",
+        "it": "rilascio iniziale",
+        "es": "liberación inicial",
+        "pl": "początkowe zwolnienie",
+        "uk": "початковий реліз",
+        "zh-cn": "初步释放"
+      },
+      "0.0.1": {
+        "en": "initial release",
+        "de": "Erstveröffentlichung",
+        "ru": "Начальная версия",
+        "pt": "lançamento inicial",
+        "nl": "Eerste uitgave",
+        "fr": "Première version",
+        "it": "Versione iniziale",
+        "es": "Versión inicial",
+        "pl": "Pierwsze wydanie",
+        "uk": "Початкова версія",
+        "zh-cn": "首次出版"
+      }
+    },
+    "titleLang": {
+      "en": "Test Devices",
+      "de": "Testgeräte",
+      "ru": "Тестовые устройства",
+      "pt": "Dispositivos de teste",
+      "nl": "Apparaten testen",
+      "fr": "Appareils de test",
+      "it": "Dispositivi di prova",
+      "es": "Dispositivos de prueba",
+      "pl": "Urządzenia testowe",
+      "uk": "Тестові пристрої",
+      "zh-cn": "测试设备"
+    },
+    "desc": {
+      "en": "Adapter to generate and simulate testing devices of different roles",
+      "de": "Adapter zur Generierung und Simulation von Testgeräten unterschiedlicher Rollen",
+      "ru": "Адаптер для создания и моделирования тестовых устройств различного назначения",
+      "pt": "Adaptador para gerar e simular dispositivos de teste de diferentes funções",
+      "nl": "Adapter voor het genereren en simuleren van testapparaten met verschillende rollen",
+      "fr": "Adaptateur pour générer et simuler des appareils de test de différents rôles",
+      "it": "Adattatore per generare e simulare dispositivi di test di diversi ruoli",
+      "es": "Adaptador para generar y simular dispositivos de prueba de diferentes roles.",
+      "pl": "Adapter do generowania i symulowania urządzeń testowych o różnych rolach",
+      "uk": "Адаптер для створення та імітації тестових пристроїв різного призначення",
+      "zh-cn": "用于生成和模拟不同角色的测试设备的适配器"
+    },
+    "authors": [
+      "OlliMartin <oss@ollimart.in>"
+    ],
+    "keywords": [
+      "testing"
+    ],
+    "licenseInformation": {
+      "type": "free",
+      "license": "MIT"
+    },
+    "platform": "Javascript/Node.js",
+    "icon": "test-devices.png",
+    "enabled": true,
+    "extIcon": "https://raw.githubusercontent.com/OlliMartin/ioBroker.test-devices/main/admin/test-devices.png",
+    "readme": "https://github.com/OlliMartin/ioBroker.test-devices/blob/main/README.md",
+    "loglevel": "info",
+    "messagebox": true,
+    "tier": 3,
+    "mode": "daemon",
+    "type": "utility",
+    "compact": true,
+    "connectionType": "local",
+    "dataSource": "push",
+    "adminUI": {
+      "config": "json"
+    },
+    "dependencies": [
+      {
+        "js-controller": ">=6.0.11"
+      }
+    ],
+    "globalDependencies": [
+      {
+        "admin": ">=7.0.23"
+      }
+    ]
+  },
+  "native": {
+    "acknowledgeStatesOnStart": true,
+    "updateWriteableStates": true
+  },
+  "objects": [],
+  "instanceObjects": [
+    {
+      "_id": "info",
+      "type": "channel",
+      "common": {
+        "name": "Information"
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.connection",
+      "type": "state",
+      "common": {
+        "role": "indicator.connected",
+        "name": "Indicates if state-creation is finished",
+        "type": "boolean",
+        "read": true,
+        "write": false,
+        "def": false
+      },
+      "native": {}
+    }
+  ]
 }
