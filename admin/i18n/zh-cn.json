@@ -1,5 +1,9 @@
 {
-	"test-devices adapter settings": "test-devices的适配器设置",
+	"Acknowledge all States on Start": "确认开始时的所有状态",
+	"If enabled, all generated/simulated states will be initially acknowledged on adapter start.": "如果启用，所有生成/模拟的状态将在适配器启动时最初得到确认。",
+	"If enabled, writeable states will receive value updates if triggered through the UI or adapter message.": "如果启用，可写状态将在通过 UI 或适配器消息触发时接收值更新。",
+	"Simulate writeable states": "模拟可写状态",
 	"option1": "选项1",
-	"option2": "选项2"
+	"option2": "选项2",
+	"test-devices adapter settings": "test-devices的适配器设置"
 }

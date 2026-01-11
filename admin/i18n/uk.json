@@ -1,5 +1,9 @@
 {
-	"test-devices adapter settings": "Налаштування адаптера для test-devices",
+	"Acknowledge all States on Start": "Підтвердити всі стани на початку",
+	"If enabled, all generated/simulated states will be initially acknowledged on adapter start.": "Якщо ввімкнено, усі згенеровані/модельовані стани будуть спочатку підтверджені під час запуску адаптера.",
+	"If enabled, writeable states will receive value updates if triggered through the UI or adapter message.": "Якщо ввімкнено, стани, доступні для запису, отримуватимуть оновлення значень, якщо ініціювати їх через інтерфейс користувача або повідомлення адаптера.",
+	"Simulate writeable states": "Симулювати стани, доступні для запису",
 	"option1": "варіант1",
-	"option2": "варіант2"
+	"option2": "варіант2",
+	"test-devices adapter settings": "Налаштування адаптера для test-devices"
 }

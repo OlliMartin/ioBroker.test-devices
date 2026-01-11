@@ -1,5 +1,9 @@
 {
-	"test-devices adapter settings": "Ustawienia adaptera dla test-devices",
+	"Acknowledge all States on Start": "Potwierdź wszystkie stany na początku",
+	"If enabled, all generated/simulated states will be initially acknowledged on adapter start.": "Jeśli ta opcja jest włączona, wszystkie wygenerowane/symulowane stany zostaną początkowo potwierdzone przy uruchomieniu adaptera.",
+	"If enabled, writeable states will receive value updates if triggered through the UI or adapter message.": "Jeśli ta opcja jest włączona, stany z możliwością zapisu będą otrzymywać aktualizacje wartości, jeśli zostaną wyzwolone za pośrednictwem interfejsu użytkownika lub komunikatu adaptera.",
+	"Simulate writeable states": "Symuluj stany zapisywalne",
 	"option1": "opcja 1",
-	"option2": "opcja 2"
+	"option2": "opcja 2",
+	"test-devices adapter settings": "Ustawienia adaptera dla test-devices"
 }

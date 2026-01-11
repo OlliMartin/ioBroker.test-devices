@@ -1,5 +1,9 @@
 {
-	"test-devices adapter settings": "Paramètres d'adaptateur pour test-devices",
+	"Acknowledge all States on Start": "Reconnaître tous les états au démarrage",
+	"If enabled, all generated/simulated states will be initially acknowledged on adapter start.": "Si cette option est activée, tous les états générés/simulés seront initialement reconnus au démarrage de l'adaptateur.",
+	"If enabled, writeable states will receive value updates if triggered through the UI or adapter message.": "S’ils sont activés, les états accessibles en écriture recevront des mises à jour de valeurs s’ils sont déclenchés via le message de l’interface utilisateur ou de l’adaptateur.",
+	"Simulate writeable states": "Simuler des états inscriptibles",
 	"option1": "option1",
-	"option2": "option2"
+	"option2": "option2",
+	"test-devices adapter settings": "Paramètres d'adaptateur pour test-devices"
 }

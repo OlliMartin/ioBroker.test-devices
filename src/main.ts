@@ -341,6 +341,8 @@ class TestDevices extends utils.Adapter {
 		const relevantStates = allStates.filter(sd => this.config.updateWriteableStates || sd.isReadOnly);
 
 		const handleSingleState = async (sd: ioBroker.DeviceStateDefinition): Promise<void> => {
+			this.log.silly(`Processing state ${sd.stateFqn}.`);
+
 			const currentValue = await this.getStateAsync(sd.stateFqn);
 			const valueGen = sd.valueGenerator ?? getFallbackValueGenerator();
 			const nextValue = valueGen(sd, currentValue?.val);

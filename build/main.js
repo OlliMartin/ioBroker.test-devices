@@ -289,6 +289,7 @@ class TestDevices extends utils.Adapter {
     const relevantStates = allStates.filter((sd) => this.config.updateWriteableStates || sd.isReadOnly);
     const handleSingleState = async (sd) => {
       var _a;
+      this.log.silly(`Processing state ${sd.stateFqn}.`);
       const currentValue = await this.getStateAsync(sd.stateFqn);
       const valueGen = (_a = sd.valueGenerator) != null ? _a : (0, import_value_generators.getFallbackValueGenerator)();
       const nextValue = valueGen(sd, currentValue == null ? void 0 : currentValue.val);

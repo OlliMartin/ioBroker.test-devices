@@ -129,7 +129,7 @@ tests.integration(projectRoot, {
 						});
 						assert.equal(response, 'SUCCESS');
 
-						const prefix = `test-devices.0.devices.${generationType}.${deviceType}`;
+						const prefix = `test-devices.0.devices.${generationType}.${deviceType}.`;
 						const relevantStates = Object.keys(objects).filter(obj => obj.startsWith(prefix));
 
 						for (const state of relevantStates) {

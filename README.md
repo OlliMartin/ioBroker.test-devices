@@ -24,6 +24,26 @@ Refer to the [Developer Section](#developer-section) below.
 The adapter will acknowledge every state change immediately, which makes it particularly useful for development of adapters
 that rely on the devices of other adapters.
 
+## Configuration
+
+The adapter is configurable through the Admin UI in two ways:
+
+| Setting                         | Description                                                                                                                                                                                                                   |
+|---------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Acknowledge all States on Start | If enabled, all generated/simulated states will be initially acknowledged on adapter start.                                                                                                                                   |
+| Simulate writeable states       | If enabled, writeable states will receive value updates if triggered through the UI or adapter message. Otherwise, only read-only states will receive value changes, while changes to writeable states are only acknowledged. |
+
+## Messages
+
+The adapter responds to the following ioBroker messages:
+
+| Command                               | Payload                                      | Description                                                                                                                               | Payload Example                                | Response            | Note                             |
+|---------------------------------------|----------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------|---------------------|----------------------------------|
+| `VERIFY_DEVICE_TYPE`                  | `deviceName: string`                         | Verifies that the `type-detector` detects the state tree under device name as device type `deviceName`                                    | `button`                                       | `SUCCESS` or `FAIL` | Required for integration tests.  |
+| `GET_DEVICE_STATES`                   | No payload                                   | Gets the fully qualified ioBroker state names of all simulated devices                                                                    | N/A                                            | Type: `string[]`    | Required for integration tests.  |
+| `SIMULATE_DEVICE_CHANGES`             | No payload                                   | Triggers a value change for _all_ states of all devices. Uses the setting `Simulate writeable states`                                     | N/A                                            | `SUCCESS`           |                                  |
+| `SIMULATE_SINGLE_DEVICE_CHANGE`       | `{ generationType: string, device: string }` | Triggers a value change for the specified device and generation type (`required` or `all`). Uses the setting `Simulate writeable states`  | `{ generationType: 'all', device: 'button' }`  | `SUCCESS`           |                                  |
+
 ## Developer Section
 
 This section outlines the high level architecture behind the `test-devices` adapter.

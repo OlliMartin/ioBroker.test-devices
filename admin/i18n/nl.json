@@ -1,5 +1,9 @@
 {
-	"test-devices adapter settings": "Adapterinstellingen voor test-devices",
+	"Acknowledge all States on Start": "Bevestig alle statussen bij het starten",
+	"If enabled, all generated/simulated states will be initially acknowledged on adapter start.": "Indien ingeschakeld, worden alle gegenereerde/gesimuleerde statussen in eerste instantie bevestigd bij het starten van de adapter.",
+	"If enabled, writeable states will receive value updates if triggered through the UI or adapter message.": "Indien ingeschakeld, ontvangen beschrijfbare staten waarde-updates als ze worden geactiveerd via de gebruikersinterface of het adapterbericht.",
+	"Simulate writeable states": "Simuleer beschrijfbare toestanden",
 	"option1": "optie1",
-	"option2": "optie2"
+	"option2": "optie2",
+	"test-devices adapter settings": "Adapterinstellingen voor test-devices"
 }

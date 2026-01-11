@@ -43,8 +43,12 @@
 			"uk": "Адаптер для створення та імітації тестових пристроїв різного призначення",
 			"zh-cn": "用于生成和模拟不同角色的测试设备的适配器"
 		},
-		"authors": ["OlliMartin <oss@ollimart.in>"],
-		"keywords": ["testing"],
+		"authors": [
+			"OlliMartin <oss@ollimart.in>"
+		],
+		"keywords": [
+			"testing"
+		],
 		"licenseInformation": {
 			"type": "free",
 			"license": "MIT"
